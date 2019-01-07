@@ -102,3 +102,9 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+*.mod
+*.exe
+*.dat
+*.pdf
+*.png

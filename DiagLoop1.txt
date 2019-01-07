@@ -1,0 +1,15 @@
+# Topology
+ 3  2  1  0 
+# SymmetryFactor
+-1.0
+# Loop Bases
+ 1  0  1  0 
+ 0  1  1  0 
+ 1  0  0  1 
+#Ver Loop Bases
+-1  0 
+ 0  1 
+ 0 -1 
+#SpinFactor
+-1  1 
+
