@@ -34,10 +34,10 @@ module parameters
   !-- Diagram Permutation Table ----------------------------------
   integer, parameter :: PHYSICAL=1
   integer, parameter :: NORMALIZATION=2
-  integer, parameter :: MaxOrder=8 ! Max diagram order
-  integer, parameter :: MaxDiagNum=1000 ! Max diagram number 
-  integer, parameter :: MaxIndepdentG=10000 ! Max indepdent Green function number 
-  integer, parameter :: MaxIndepdentVer=10000 ! Max indepdent vertex number
+  integer, parameter :: MaxOrder=4 ! Max diagram order
+  integer, parameter :: MaxDiagNum=1024 ! Max diagram number 
+  integer, parameter :: MaxIndepdentG=2048 ! Max indepdent Green function number 
+  integer, parameter :: MaxIndepdentVer=1024 ! Max indepdent vertex number
   integer, parameter :: MaxEK=10000 ! Max indepdent vertex number
   integer, parameter :: MaxTau=10000 ! Max indepdent vertex number
   integer :: GNum, VerNum, LoopNum, DiagNum, TauNum, HugenholtzNum !Number of G, Vertex, Loop, diagram, 
@@ -46,45 +46,70 @@ module parameters
 
   !double precision, dimension(0:MaxEK, 0:MaxTau) :: GreenTable  !propagator for different k and tau
   ! all diagram-related arraies have two copies: 1 is for physical diagrams, 2 is normalization diagrams
-  integer, allocatable :: GIndex(:,:), GIndexNorm(:,:)  ! Index of Green function
-  integer, allocatable :: VerIndex(:,:), VerIndexNorm(:,:) ! Index of vertex
-  double precision,allocatable ::SymFactor(:), SymFactorNorm(:)  ! Symmetry Factor (includes diagram sign)
-  double precision,allocatable ::SpinFactor(:,:), SpinFactorNorm(:,:)  ! Spin Factor (includes diagram sign)
-  double precision,allocatable ::SpinCache(:,:), SpinCacheNorm(:,:) 
-  integer, allocatable :: LoopBases(:,:), LoopBasesNorm(:,:) ! Bases for loops
-  integer, allocatable :: LoopBasesVer(:,:), LoopBasesVerNorm(:,:) ! Bases for loops including vertex
-  integer, allocatable :: TauBases(:,:), TauBasesNorm(:,:) ! Permutation 
-  double precision, allocatable :: DiagWeight(:), DiagWeightABS(:)
-  double precision, allocatable :: GWeight(:), GWeightNorm(:) !Weight of green function
-  double precision, allocatable :: VerWeight(:), VerWeightNorm(:) ! Weight of vertex (interation)
-  double precision, allocatable :: NewGWeight(:), NewGWeightNorm(:) !Weight of green function
-  double precision, allocatable :: NewVerWeight(:), NewVerWeightNorm(:) ! Weight of vertex (interation)
-  double precision, allocatable :: LoopMom(:,:), LoopMomNorm(:,:) ! values to attach to each loop basis
-  double precision, allocatable:: LoopSpin(:), LoopSpinNorm(:) ! values to attach to each spin
-  double precision, allocatable :: TauTable(:), TauTableNorm(:) ! Time table for each Tau, all Tau are between [0,beta)
+  !integer, allocatable :: GIndex(:,:,:)  ! Index of Green function
+  !integer, allocatable :: VerIndex(:,:,:) ! Index of vertex
+  !double precision,allocatable ::SymFactor(:,:)  ! Symmetry Factor (includes diagram sign)
+  !double precision,allocatable ::SpinFactor(:,:,:)  ! Spin Factor (includes diagram sign)
+  !double precision,allocatable ::SpinCache(:,:,:) 
+  !integer, allocatable :: LoopBases(:,:,:) ! Bases for loops
+  !integer, allocatable :: LoopBasesVer(:,:,:) ! Bases for loops including vertex
+  !integer, allocatable :: TauBases(:,:,:) ! Permutation 
+  !double precision, allocatable :: DiagWeight(:,:)
+  !double precision, allocatable :: GWeight(:,:) !Weight of green function
+  !double precision, allocatable :: VerWeight(:,:) ! Weight of vertex (interation)
+  !double precision, allocatable :: NewGWeight(:,:) !Weight of green function
+  !double precision, allocatable :: NewVerWeight(:,:) ! Weight of vertex (interation)
+  !double precision, allocatable :: LoopMom(:,:) ! values to attach to each loop basis
+  !double precision, allocatable:: LoopSpin(:) ! values to attach to each spin
+  !double precision, allocatable :: TauTable(:) ! Time table for each Tau, all Tau are between [0,beta)
+
+  !allocate(GIndex(HugenholtzNum, 2*Order))
+  !allocate(GIndexNorm(HugenholtzNum, 2*Order))
+
+  !allocate(VerIndex(HugenholtzNum, 2*Order), VerIndexNorm(HugenholtzNum, 2*Order)) ! Index of vertex
+  !allocate(SymFactor(HugenholtzNum), SymFactorNorm(HugenholtzNum))  ! Symmetry Factor (includes diagram sign)
+  !allocate(SpinFactor(2**VerNum, HugenholtzNum), SpinFactorNorm(2**VerNum, HugenholtzNum))  ! Symmetry Factor (includes diagram sign)
+  !allocate(SpinCache(2**VerNum, Order-1), SpinCacheNorm(2**VerNum, Order-1)) 
+
+  !allocate(LoopBases(Order+1, iGNum), LoopBasesNorm(Order+1, iGNum)) ! Bases for loops
+  !allocate(LoopBasesVer(Order+1, iVerNum), LoopBasesVerNorm(Order+1, iVerNum)) ! Bases for loops including vertex
+  !allocate(TauBases(2*Order, iGNum), TauBasesNorm(2*Order, iGNum)) ! Permutation 
+
+  !allocate(DiagWeight(HugenholtzNum), DiagWeightABS(HugenholtzNum))
+  !allocate(GWeight(iGNum), GWeightNorm(iGNum)) !Weight of green function
+  !allocate(NewGWeight(iGNum), NewGWeightNorm(iGNum)) !Weight of green function
+  !allocate(VerWeight(iVerNum), VerWeightNorm(iVerNum))
+  !allocate(NewVerWeight(iVerNum), NewVerWeightNorm(iVerNum))
+  !allocate(LoopMom(D, Order+1), LoopMomNorm(D, Order+1)) ! values to attach to each loop basis
+  !allocate(LoopSpin(Order+1), LoopSpinNorm(Order+1)) ! values to attach to each spin
+  !allocate(TauTable(2*Order), TauTableNorm(2*Order)) ! Time table for each Tau, all Tau are between [0,beta)
 
 
-  !integer, dimension(MaxDiagNum, 2*MaxOrder) :: GIndex, GIndexNorm  ! Index of Green function
-  !integer, dimension(MaxDiagNum, 2*MaxOrder) :: VerIndex,  VerIndexNorm ! Index of vertex
-  !double precision,dimension(MaxDiagNum) ::SymFactor, SymFactorNorm  ! Symmetry Factor (includes diagram sign)
-  !integer, dimension(MaxOrder+1, MaxIndepdentG) :: LoopBases, LoopBasesNorm ! Bases for loops
-  !integer, dimension(MaxOrder+1, MaxIndepdentVer) :: LoopBasesVer, LoopBasesVerNorm ! Bases for loops including vertex
-  !integer, dimension(2*MaxOrder, MaxIndepdentG) :: TauBases, TauBasesNorm ! Permutation 
-  !double precision, dimension(MaxDiagNum) :: DiagWeight, DiagWeightABS
 
-  !double precision, dimension(MaxIndepdentG) :: GWeight, GWeightNorm !Weight of green function
-  !double precision, dimension(MaxIndepdentVer) :: VerWeight, VerWeightNorm ! Weight of vertex (interation)
+  !integer, dimension(MaxDiagNum) :: HugenNum  ! Number of HugenholtzNum diagram in each order
+  integer, dimension(MaxDiagNum, 2*MaxOrder) :: GIndex, GIndexNorm  ! Index of Green function
+  integer, dimension(MaxDiagNum, 2*MaxOrder) :: VerIndex,  VerIndexNorm ! Index of vertex
+  double precision,dimension(MaxDiagNum) ::SymFactor, SymFactorNorm  ! Symmetry Factor (includes diagram sign)
+  double precision,dimension(2**(MaxOrder-1), MaxDiagNum) ::SpinFactor  ! Spin Factor (includes diagram sign)
+  double precision,dimension(2**(MaxOrder-1), MaxOrder-1) ::SpinCache  ! Spin Factor (includes diagram sign)
+  integer, dimension(MaxOrder+1, MaxIndepdentG) :: LoopBases, LoopBasesNorm ! Bases for loops
+  integer, dimension(MaxOrder+1, MaxIndepdentVer) :: LoopBasesVer, LoopBasesVerNorm ! Bases for loops including vertex
+  integer, dimension(2*MaxOrder, MaxIndepdentG) :: TauBases, TauBasesNorm ! Permutation 
+  double precision, dimension(MaxDiagNum) :: DiagWeight, DiagWeightABS
 
-  !double precision, dimension(MaxIndepdentG) :: NewGWeight, NewGWeightNorm !Weight of green function
-  !double precision, dimension(MaxIndepdentVer) :: NewVerWeight, NewVerWeightNorm ! Weight of vertex (interation)
+  double precision, dimension(MaxIndepdentG) :: GWeight, GWeightNorm !Weight of green function
+  double precision, dimension(MaxIndepdentVer) :: VerWeight, VerWeightNorm ! Weight of vertex (interation)
 
-  !!double precision, dimension(MaxIndepdentG) :: FreqTable, FreqTableNorm  !Freq variable for each propagator
-  !!integer, dimension(D, MaxIndepdentG) :: MomTable, MomTableNorm  !Momentum variable for each propagator, kx, ky, kz
-  !!integer, dimension(MaxIndepdentG) :: SpinTable, SpinTableNorm  !spin variable for each vertex function, 1: spin for in-leg, 2:spin for out-leg
+  double precision, dimension(MaxIndepdentG) :: NewGWeight, NewGWeightNorm !Weight of green function
+  double precision, dimension(MaxIndepdentVer) :: NewVerWeight, NewVerWeightNorm ! Weight of vertex (interation)
 
-  !double precision, dimension(D, MaxOrder+1) :: LoopMom, LoopMomNorm ! values to attach to each loop basis
-  !integer, dimension(MaxOrder+1) :: LoopSpin, LoopSpinNorm ! values to attach to each spin
-  !double precision, dimension(2*MaxOrder) :: TauTable, TauTableNorm ! Time table for each Tau, all Tau are between [0,beta)
+  !double precision, dimension(MaxIndepdentG) :: FreqTable, FreqTableNorm  !Freq variable for each propagator
+  !integer, dimension(D, MaxIndepdentG) :: MomTable, MomTableNorm  !Momentum variable for each propagator, kx, ky, kz
+  !integer, dimension(MaxIndepdentG) :: SpinTable, SpinTableNorm  !spin variable for each vertex function, 1: spin for in-leg, 2:spin for out-leg
+
+  double precision, dimension(D, MaxOrder+1) :: LoopMom, LoopMomNorm ! values to attach to each loop basis
+  integer, dimension(MaxOrder+1) :: LoopSpin, LoopSpinNorm ! values to attach to each spin
+  double precision, dimension(2*MaxOrder) :: TauTable, TauTableNorm ! Time table for each Tau, all Tau are between [0,beta)
 
   integer :: Offset, OffVer, OffDiag
 
@@ -257,27 +282,6 @@ program main
     iVerNum = 2 * VerNum  * HugenholtzNum 
     
     
-    allocate(GIndex(HugenholtzNum, 2*Order))
-    allocate(GIndexNorm(HugenholtzNum, 2*Order))
-
-    allocate(VerIndex(HugenholtzNum, 2*Order), VerIndexNorm(HugenholtzNum, 2*Order)) ! Index of vertex
-    allocate(SymFactor(HugenholtzNum), SymFactorNorm(HugenholtzNum))  ! Symmetry Factor (includes diagram sign)
-    allocate(SpinFactor(2**VerNum, HugenholtzNum), SpinFactorNorm(2**VerNum, HugenholtzNum))  ! Symmetry Factor (includes diagram sign)
-    allocate(SpinCache(2**VerNum, Order-1), SpinCacheNorm(2**VerNum, Order-1)) 
-
-    allocate(LoopBases(Order+1, iGNum), LoopBasesNorm(Order+1, iGNum)) ! Bases for loops
-    allocate(LoopBasesVer(Order+1, iVerNum), LoopBasesVerNorm(Order+1, iVerNum)) ! Bases for loops including vertex
-    allocate(TauBases(2*Order, iGNum), TauBasesNorm(2*Order, iGNum)) ! Permutation 
-
-    allocate(DiagWeight(HugenholtzNum), DiagWeightABS(HugenholtzNum))
-    allocate(GWeight(iGNum), GWeightNorm(iGNum)) !Weight of green function
-    allocate(NewGWeight(iGNum), NewGWeightNorm(iGNum)) !Weight of green function
-    allocate(VerWeight(iVerNum), VerWeightNorm(iVerNum))
-    allocate(NewVerWeight(iVerNum), NewVerWeightNorm(iVerNum))
-    allocate(LoopMom(D, Order+1), LoopMomNorm(D, Order+1)) ! values to attach to each loop basis
-    allocate(LoopSpin(Order+1), LoopSpinNorm(Order+1)) ! values to attach to each spin
-    allocate(TauTable(2*Order), TauTableNorm(2*Order)) ! Time table for each Tau, all Tau are between [0,beta)
-
     print *, "Reading Diagram ..."
     call ReadDiagram()
     print *, "Read Diagram done!"
@@ -390,7 +394,7 @@ end subroutine
                     Read(10, *)  LoopBasesVer(baseNum, OffVer+1:OffVer+2*VerNum)
                 end do
                 Read(10, *) charc
-                Read(10, *) SpinFactor(:, numDiagV)
+                Read(10, *) SpinFactor(1:2**VerNum, numDiagV)
     
                 OffDiag = OffDiag + DiagNum1H
                 Offset = Offset + GNum
@@ -403,43 +407,6 @@ end subroutine
 
     end subroutine
 
-    !double precision function Green(tau ,Mom, spin)
-        !!calculate Green's function
-        !implicit none
-        !double precision :: tau, k2, s, Ek, x, y, w, r, coshv
-        !integer :: spin, i
-        !double precision, dimension(D) :: Mom
-    !!    print *, tau, Mom, Spin
-    !!    stop
-        !s=1.0
-        !if(tau<0) then
-          !tau=beta+tau
-          !s=-s
-        !endif
-        !if(tau>=beta) then
-          !tau=tau-beta
-          !s=-s
-        !endif
-        !Ek=sum(Mom**2)   !kinetic energy
-        !x=Beta*(Ek-Mu)/2.0
-        !y=2.0*tau/Beta-1.0
-        !if(x>100.0) then
-          !Green=dexp(-x*(y+1.0))
-        !else if(x<-100.0) then
-          !Green=dexp(x*(1.0-y))
-        !else
-          !Green=dexp(-x*y)/(2.0*cosh(x))
-        !endif
-        !!if(spin==1 .or. spin==-1) then
-        !Green=s*Green
-    
-        !if(isnan(Green)) then
-          !print *, "Green is too large!", tau, Ek, Green
-          !stop
-        !endif
-        !return
-      !end function Green
-
     double precision function Green(tau ,Mom, spin)
         !calculate Green's function
         implicit none
@@ -448,11 +415,48 @@ end subroutine
         double precision, dimension(D) :: Mom
     !    print *, tau, Mom, Spin
     !    stop
+        s=1.0
+        if(tau<0) then
+          tau=beta+tau
+          s=-s
+        endif
+        if(tau>=beta) then
+          tau=tau-beta
+          s=-s
+        endif
         Ek=sum(Mom**2)   !kinetic energy
-        Green=1.0/(Ek+Mass2)
+        x=Beta*(Ek-Mu)/2.0
+        y=2.0*tau/Beta-1.0
+        if(x>100.0) then
+          Green=dexp(-x*(y+1.0))
+        else if(x<-100.0) then
+          Green=dexp(x*(1.0-y))
+        else
+          Green=dexp(-x*y)/(2.0*cosh(x))
+        endif
+        !if(spin==1 .or. spin==-1) then
+        Green=s*Green
     
+        if(isnan(Green)) then
+          print *, "Green is too large!", tau, Ek, Green
+          stop
+        endif
         return
       end function Green
+
+    !double precision function Green(tau ,Mom, spin)
+        !!calculate Green's function
+        !implicit none
+        !double precision :: tau, k2, s, Ek, x, y, w, r, coshv
+        !integer :: spin, i
+        !double precision, dimension(D) :: Mom
+    !!    print *, tau, Mom, Spin
+    !!    stop
+        !Ek=sum(Mom**2)   !kinetic energy
+        !Green=1.0/(Ek+Mass2)
+    
+        !return
+   !end function Green
 
       !subroutine CreateGTable()
         !implicit none

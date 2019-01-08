@@ -12,8 +12,8 @@ rs=1
 kF=np.sqrt(2.0)/rs #2D
 
 # Index=[1,2,3,4]
-# Index=[1,2,3,4,5]
-Index=[1,]
+Index=[1,2,3,4,5]
+# Index=[1,]
 Data=[]
 Normalization=0
 
@@ -87,7 +87,7 @@ for i in Index:
 
 def ErrorPlot(p, data, color, marker, label=None, size=4):
     data[:,0]/=kF
-    # data[:,1]-=data[0,1]
+    data[:,1]-=data[0,1]
     p.plot(data[:,0],data[:,1],marker=marker,c=color, label=label,lw=1, markeredgecolor="None", linestyle="--", markersize=size)
     # p.errorbar(data[:,0],data[:,1], yerr=data[:,2], c=color, ecolor=color, capsize=0, linestyle="None")
     # p.fill_between(data[:,0], data[:,1]-data[:,2], data[:,1]+data[:,2], alpha=0.5, facecolor=color, edgecolor=color)
@@ -114,10 +114,10 @@ fig, ax = plt.subplots()
 
 ErrorPlot(ax, data0, 'k', 's', "Total")
 ErrorPlot(ax, Data[0], 'r', 's', "Diag 1")
-# ErrorPlot(ax, Data[1], 'b', 's', "Diag 2")
-# ErrorPlot(ax, Data[2], 'g', 's', "Diag 3")
-# ErrorPlot(ax, Data[3], 'm', 's', "Diag 4")
-# ErrorPlot(ax, Data[4], 'c', '*', "Diag 5")
+ErrorPlot(ax, Data[1], 'b', 's', "Diag 2")
+ErrorPlot(ax, Data[2], 'g', 's', "Diag 3")
+ErrorPlot(ax, Data[3], 'm', 's', "Diag 4")
+ErrorPlot(ax, Data[4], 'c', '*', "Diag 5")
 
 # ErrorPlot(ax, Data[5], 'g', 's', "Diag 6")
 # ErrorPlot(ax, L4, 'm', '<', "$t=1.0$")
