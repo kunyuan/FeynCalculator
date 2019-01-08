@@ -1,3 +1,6 @@
+#DiagNum
+5
+
 # Topology
  4  3  1  5  2  0 
 # SymmetryFactor

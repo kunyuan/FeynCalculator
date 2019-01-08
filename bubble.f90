@@ -40,61 +40,20 @@ module parameters
   integer, parameter :: MaxIndepdentVer=1024 ! Max indepdent vertex number
   integer, parameter :: MaxEK=10000 ! Max indepdent vertex number
   integer, parameter :: MaxTau=10000 ! Max indepdent vertex number
-  integer :: GNum, VerNum, LoopNum, DiagNum, TauNum, HugenholtzNum !Number of G, Vertex, Loop, diagram, 
-  integer :: iGNum, iVerNum !Number of independent G and Vertex
-  integer :: numDiagV, DiagNum1H
+  integer, dimension(MaxOrder) :: GNum, VerNum, LoopNum, DiagNum, TauNum, HugenholtzNum !Number of G, Vertex, Loop, diagram, 
+  integer, dimension(MaxOrder) :: iGNum, iVerNum !Number of independent G and Vertex
+  integer, dimension(MaxOrder) :: numDiagV, DiagNum1H
 
-  !double precision, dimension(0:MaxEK, 0:MaxTau) :: GreenTable  !propagator for different k and tau
-  ! all diagram-related arraies have two copies: 1 is for physical diagrams, 2 is normalization diagrams
-  !integer, allocatable :: GIndex(:,:,:)  ! Index of Green function
-  !integer, allocatable :: VerIndex(:,:,:) ! Index of vertex
-  !double precision,allocatable ::SymFactor(:,:)  ! Symmetry Factor (includes diagram sign)
-  !double precision,allocatable ::SpinFactor(:,:,:)  ! Spin Factor (includes diagram sign)
-  !double precision,allocatable ::SpinCache(:,:,:) 
-  !integer, allocatable :: LoopBases(:,:,:) ! Bases for loops
-  !integer, allocatable :: LoopBasesVer(:,:,:) ! Bases for loops including vertex
-  !integer, allocatable :: TauBases(:,:,:) ! Permutation 
-  !double precision, allocatable :: DiagWeight(:,:)
-  !double precision, allocatable :: GWeight(:,:) !Weight of green function
-  !double precision, allocatable :: VerWeight(:,:) ! Weight of vertex (interation)
-  !double precision, allocatable :: NewGWeight(:,:) !Weight of green function
-  !double precision, allocatable :: NewVerWeight(:,:) ! Weight of vertex (interation)
-  !double precision, allocatable :: LoopMom(:,:) ! values to attach to each loop basis
-  !double precision, allocatable:: LoopSpin(:) ! values to attach to each spin
-  !double precision, allocatable :: TauTable(:) ! Time table for each Tau, all Tau are between [0,beta)
+  integer :: CurrOrder
 
-  !allocate(GIndex(HugenholtzNum, 2*Order))
-  !allocate(GIndexNorm(HugenholtzNum, 2*Order))
-
-  !allocate(VerIndex(HugenholtzNum, 2*Order), VerIndexNorm(HugenholtzNum, 2*Order)) ! Index of vertex
-  !allocate(SymFactor(HugenholtzNum), SymFactorNorm(HugenholtzNum))  ! Symmetry Factor (includes diagram sign)
-  !allocate(SpinFactor(2**VerNum, HugenholtzNum), SpinFactorNorm(2**VerNum, HugenholtzNum))  ! Symmetry Factor (includes diagram sign)
-  !allocate(SpinCache(2**VerNum, Order-1), SpinCacheNorm(2**VerNum, Order-1)) 
-
-  !allocate(LoopBases(Order+1, iGNum), LoopBasesNorm(Order+1, iGNum)) ! Bases for loops
-  !allocate(LoopBasesVer(Order+1, iVerNum), LoopBasesVerNorm(Order+1, iVerNum)) ! Bases for loops including vertex
-  !allocate(TauBases(2*Order, iGNum), TauBasesNorm(2*Order, iGNum)) ! Permutation 
-
-  !allocate(DiagWeight(HugenholtzNum), DiagWeightABS(HugenholtzNum))
-  !allocate(GWeight(iGNum), GWeightNorm(iGNum)) !Weight of green function
-  !allocate(NewGWeight(iGNum), NewGWeightNorm(iGNum)) !Weight of green function
-  !allocate(VerWeight(iVerNum), VerWeightNorm(iVerNum))
-  !allocate(NewVerWeight(iVerNum), NewVerWeightNorm(iVerNum))
-  !allocate(LoopMom(D, Order+1), LoopMomNorm(D, Order+1)) ! values to attach to each loop basis
-  !allocate(LoopSpin(Order+1), LoopSpinNorm(Order+1)) ! values to attach to each spin
-  !allocate(TauTable(2*Order), TauTableNorm(2*Order)) ! Time table for each Tau, all Tau are between [0,beta)
-
-
-
-  !integer, dimension(MaxDiagNum) :: HugenNum  ! Number of HugenholtzNum diagram in each order
-  integer, dimension(MaxDiagNum, 2*MaxOrder) :: GIndex, GIndexNorm  ! Index of Green function
-  integer, dimension(MaxDiagNum, 2*MaxOrder) :: VerIndex,  VerIndexNorm ! Index of vertex
-  double precision,dimension(MaxDiagNum) ::SymFactor, SymFactorNorm  ! Symmetry Factor (includes diagram sign)
-  double precision,dimension(2**(MaxOrder-1), MaxDiagNum) ::SpinFactor  ! Spin Factor (includes diagram sign)
+  integer, dimension(MaxDiagNum, 2*MaxOrder, MaxOrder) :: GIndex, GIndexNorm  ! Index of Green function
+  integer, dimension(MaxDiagNum, 2*MaxOrder, MaxOrder) :: VerIndex,  VerIndexNorm ! Index of vertex
+  double precision,dimension(MaxDiagNum, MaxOrder) ::SymFactor, SymFactorNorm  ! Symmetry Factor (includes diagram sign)
+  double precision,dimension(2**(MaxOrder-1), MaxDiagNum, MaxOrder) ::SpinFactor  ! Spin Factor (includes diagram sign)
   double precision,dimension(2**(MaxOrder-1), MaxOrder-1) ::SpinCache  ! Spin Factor (includes diagram sign)
-  integer, dimension(MaxOrder+1, MaxIndepdentG) :: LoopBases, LoopBasesNorm ! Bases for loops
-  integer, dimension(MaxOrder+1, MaxIndepdentVer) :: LoopBasesVer, LoopBasesVerNorm ! Bases for loops including vertex
-  integer, dimension(2*MaxOrder, MaxIndepdentG) :: TauBases, TauBasesNorm ! Permutation 
+  integer, dimension(MaxOrder+1, MaxIndepdentG, MaxOrder) :: LoopBases, LoopBasesNorm ! Bases for loops
+  integer, dimension(MaxOrder+1, MaxIndepdentVer, MaxOrder) :: LoopBasesVer, LoopBasesVerNorm ! Bases for loops including vertex
+  integer, dimension(2*MaxOrder, MaxIndepdentG, MaxOrder) :: TauBases, TauBasesNorm ! Permutation 
   double precision, dimension(MaxDiagNum) :: DiagWeight, DiagWeightABS
 
   double precision, dimension(MaxIndepdentG) :: GWeight, GWeightNorm !Weight of green function
@@ -133,12 +92,12 @@ module parameters
   !integer, parameter          :: WBinNum=128     !number of q bins
   double precision, dimension(20) :: F1, F2, F3
 
-  double precision, dimension(QBinNum) :: Polarization  !the accumulated weight of the Spin-zz polarization
-  double precision, dimension(MaxDiagNum, QBinNum) :: PolarDiag  !the accumulated weight of the Spin-zz polarization
-  double precision, dimension(QBinNum) :: TauPolarization  !the accumulated weight of the Spin-zz polarization
+  double precision, dimension(QBinNum, MaxOrder) :: Polarization  !the accumulated weight of the Spin-zz polarization
+  double precision, dimension(MaxDiagNum, QBinNum, MaxOrder) :: PolarDiag  !the accumulated weight of the Spin-zz polarization
+  double precision, dimension(QBinNum, MaxOrder) :: TauPolarization  !the accumulated weight of the Spin-zz polarization
   double precision, dimension(D, QBinNum)   :: ExtMomMesh
   
-  logical, dimension(MaxIndepdentVer) :: reducibleTable
+  logical, dimension(MaxIndepdentVer, MaxOrder) :: reducibleTable
 
 end module
 
@@ -149,10 +108,10 @@ program main
     use parameters
     implicit none
     double precision :: x
-    integer :: PrintCounter, SaveCounter
+    integer :: PrintCounter, SaveCounter, o, hum
   
     print *, 'Beta, rs, Mass2, Order, HugenholtzNum, TotalStep(*1e6), Seed, PID'
-    read(*,*)  Beta, rs, Mass2, Order, HugenholtzNum, TotalStep, Seed, PID
+    read(*,*)  Beta, rs, Mass2, Order, hum, TotalStep, Seed, PID
     !Beta=10.0
     !rs=1.0
     !Mass2=1.0
@@ -211,18 +170,21 @@ program main
           print *, "Momnorm", norm2(LoopMom(:,2)+LoopMom(:,1))**2-Mu, norm2(LoopMom(:,2))**2-Mu
           !print *, "mom3", norm2(LoopMom(:,3))
           !print *, "mom4", norm2(LoopMom(:,4))
-          print *, "tau table", TauTable(1:TauNum)
+          print *, "tau table", TauTable(1:TauNum(CurrOrder))
           print *, "green", GWeight(1), GWeight(2)
           print *, "weight", OldWeight
         endif
         if (PrintCounter==1e8)  then
-          call SaveToDisk()
-          call SaveToDiskF()
+          !do o=1, Order
+            call SaveToDisk(CurrOrder)
+          !enddo
         endif
     end do
 
-    call SaveToDisk()
-    call SaveToDiskF()
+    !do o=1, Order
+    print *, "printing..."
+      call SaveToDisk(CurrOrder)
+    !enddo
     
     print *, "End simulation."
   
@@ -271,21 +233,11 @@ program main
     implicit none
     integer :: i, num
 
-    GNum = 2*Order   	
-    VerNum = Order-1 	
-    LoopNum = Order+1	
-    TauNum = 2*Order	
-    DiagNum1H = 2**VerNum
+    CurrOrder=Order
 
-    DiagNum = DiagNum1H * HugenholtzNum  
-    iGNum = GNum * HugenholtzNum
-    iVerNum = 2 * VerNum  * HugenholtzNum 
-    
-    
     print *, "Reading Diagram ..."
     call ReadDiagram()
     print *, "Read Diagram done!"
-    call Reducible
     !call CreateGTable()
 
     normConstant = 0.3
@@ -313,7 +265,7 @@ program main
 
     ExtMomBin=1
 
-    do i=0, Order-1
+    do i=0, CurrOrder-1
       num=2*i+1
       if(num==1) then
         TauTable(num)=0.0
@@ -364,45 +316,62 @@ end subroutine
         implicit none
         character(90) :: fname
         character (len=20) :: charc
-        integer :: baseNum, i, numDiagV, num
+        integer :: baseNum, i, numDiagV, num, o
         character( len = 3 ) :: Orderstr
     
-        OffDiag = 0
-        Offset = 0
-        OffVer = 0
+        do o=1, Order
+          !TODO: test only
+          if(o/=CurrOrder) cycle
+
+          OffDiag = 0
+          Offset = 0
+          OffVer = 0
+
+          write( Orderstr,'(I3)' )  Order 
+          fname = 'DiagPolar'//trim(adjustl(Orderstr))//'.txt'
+      
+          open(unit=10, file=trim(fname), action='read', status="old")
+              Read(10, *) charc  !the DiagNum comment
+              Read(10, *) HugenholtzNum(o)
+
+              GNum(o) = 2*o  	
+              VerNum(o) = o-1 	
+              LoopNum(o) = o+1	
+              TauNum(o) = 2*o
+              DiagNum1H(o) = 2**VerNum(o)
+
+              DiagNum(o) = DiagNum1H(o) * HugenholtzNum(o)  
+              iGNum(o) = GNum(o) * HugenholtzNum(o)
+              iVerNum(o) = 2 * VerNum(o)  * HugenholtzNum(o) 
     
-        write( Orderstr,'(I3)' )  Order 
-    	fname = 'DiagPolar'//trim(adjustl(Orderstr))//'.txt'
-    
-        open(unit=10, file=trim(fname), action='read', status="old")
-            do numDiagV=1, HugenholtzNum
-                GIndex(numDiagV, 1:GNum) = (/ ((numDiagV-1)*GNum+i, i=1, GNum) /)
-                VerIndex(numDiagV, 1:2*VerNum) = (/ ( (numDiagV-1)*2*VerNum + i, i=1, 2*VerNum ) /)
-    
-                Read(10, *) charc
-                Read(10, *) TauBases(2, Offset+1:Offset+GNum)
-                TauBases(1, Offset+1:Offset+GNum) = (/ (i, i=1,GNum) /) 
-                TauBases(2, Offset+1:Offset+GNum) = TauBases(2, Offset+1:Offset+GNum) + 1
-                Read(10, *) charc
-                Read(10, *) SymFactor(numDiagV)
-                Read(10, *) charc
-                do baseNum=1, LoopNum
-                    Read(10, *)  LoopBases(baseNum, Offset+1:Offset+GNum)
-                end do
-                Read(10, *) charc
-                do baseNum=1, Order+1
-                    Read(10, *)  LoopBasesVer(baseNum, OffVer+1:OffVer+2*VerNum)
-                end do
-                Read(10, *) charc
-                Read(10, *) SpinFactor(1:2**VerNum, numDiagV)
-    
-                OffDiag = OffDiag + DiagNum1H
-                Offset = Offset + GNum
-                OffVer = OffVer + 2*VerNum
-            end do
-    
-        CLOSE(unit=10)
- 
+              do numDiagV=1, HugenholtzNum(o)
+                  GIndex(numDiagV, 1:GNum(o), o) = (/ ((numDiagV-1)*GNum(o)+i, i=1, GNum(o)) /)
+                  VerIndex(numDiagV, 1:2*VerNum(o), o) = (/ ( (numDiagV-1)*2*VerNum(o) + i, i=1, 2*VerNum(o) ) /)
+      
+                  Read(10, *) charc   !Permuation comment
+                  Read(10, *) TauBases(2, Offset+1:Offset+GNum(o), o)
+                  TauBases(1, Offset+1:Offset+GNum(o), o) = (/ (i, i=1,GNum(o)) /) 
+                  TauBases(2, Offset+1:Offset+GNum(o), o) = TauBases(2, Offset+1:Offset+GNum(o), o) + 1
+                  Read(10, *) charc
+                  Read(10, *) SymFactor(numDiagV, o)
+                  Read(10, *) charc
+                  do baseNum=1, LoopNum(o)
+                      Read(10, *)  LoopBases(baseNum, Offset+1:Offset+GNum(o), o)
+                  end do
+                  Read(10, *) charc
+                  do baseNum=1, LoopNum(o)
+                      Read(10, *)  LoopBasesVer(baseNum, OffVer+1:OffVer+2*VerNum(o), o)
+                  end do
+                  Read(10, *) charc
+                  Read(10, *) SpinFactor(1:2**VerNum(o), numDiagV, o)
+      
+                  OffDiag = OffDiag + DiagNum1H(o)
+                  Offset = Offset + GNum(o)
+                  OffVer = OffVer + 2*VerNum(o)
+              end do
+      
+          CLOSE(unit=10)
+        enddo
 !        SymFactor(2:5) = 0.5 * SymFactor(2:5)
 
     end subroutine
@@ -542,14 +511,14 @@ end subroutine
         weight = CalcWeight(0)
         if(abs(weight-OldWeight)>1e-6) then
           print *, "Weight is wrong at step:", Step, weight, OldWeight
-          print *, "TauTable", TauTable(1:TauNum)
-          print *, "LoopMom", LoopMom(:, 1:LoopNum)
-          print *, "GWeight", GWeight(1:GNum), GWeightNorm(1:GNum)
-          print *, "VerWeight", VerWeight(1:VerNum), VerWeightNorm(1:VerNum)
+          print *, "TauTable", TauTable(1:TauNum(CurrOrder))
+          print *, "LoopMom", LoopMom(:, 1:LoopNum(CurrOrder))
+          print *, "GWeight", GWeight(1:GNum(CurrOrder)), GWeightNorm(1:GNum(CurrOrder))
+          print *, "VerWeight", VerWeight(1:VerNum(CurrOrder)), VerWeightNorm(1:VerNum(CurrOrder))
           stop
         endif
     
-        do i=1, LoopNum
+        do i=1, LoopNum(CurrOrder)
           do j=1, D
             if(isnan(LoopMom(j, i))) then
               print *, "Mom is NaN",Step, j, i, LoopMom(j, i)
@@ -558,7 +527,7 @@ end subroutine
           enddo
         enddo
     
-        do i=1, iVerNum
+        do i=1, iVerNum(CurrOrder)
           if(isnan(VerWeight(i))) then
             print *, "VerWeight is NaN",Step, i, VerWeight(i)
             stop
@@ -592,45 +561,42 @@ end subroutine
         double precision, dimension(D) :: Mom
         !print *, "iGNum", iGNum
         call NewState()
-        do i=1, iGNum 
-          Tau = TauTable(TauBases(2, i))-TauTable(TauBases(1, i))
-          Spin=sum(LoopBases(:, i)*LoopSpin(:))
+        do i=1, iGNum(CurrOrder)
+          Tau = TauTable(TauBases(2, i, CurrOrder))-TauTable(TauBases(1, i, CurrOrder))
+          Spin=sum(LoopBases(1:LoopNum(CurrOrder), i, CurrOrder)*LoopSpin(1:LoopNum(CurrOrder)))
           do j=1, D
-            Mom(j)=sum(LoopBases(:, i)*LoopMom(j, :))
+            Mom(j)=sum(LoopBases(1:LoopNum(CurrOrder), i, CurrOrder)*LoopMom(j, 1:LoopNum(CurrOrder)))
           enddo
           NewGWeight(i)=Green(Tau, Mom, Spin)
         enddo
     
     
-        do i=1, iVerNum 
-            Spin=sum(LoopBasesVer(:, i)*LoopSpin(:))
+        do i=1, iVerNum(CurrOrder) 
+            Spin=sum(LoopBasesVer(1:LoopNum(CurrOrder), i, CurrOrder)*LoopSpin(1:LoopNum(CurrOrder)))
             do j=1, D
-                Mom(j)=sum(LoopBasesVer(:, i)*LoopMom(j, :))
+                Mom(j)=sum(LoopBasesVer(1:LoopNum(CurrOrder), i, CurrOrder)*LoopMom(j, 1:LoopNum(CurrOrder)))
             enddo
 
-            if (reducibleTable(i)) then
-                NewVerWeight(i) = 0.0
-            else
-                NewVerWeight(i) = Interaction(0.d0, Mom, Spin)
-            endif
+            NewVerWeight(i) = Interaction(0.d0, Mom, Spin)
 
         enddo
     
         return
     end subroutine
 
+    !TODO: currorder may change!
     subroutine NewState()
       implicit none
-      NewGWeight(1:iGNum)=GWeight(1:iGNum)
-      NewVerWeight(1:iVerNum)=VerWeight(1:iVerNum)
+      NewGWeight(1:iGNum(CurrOrder))=GWeight(1:iGNum(CurrOrder))
+      NewVerWeight(1:iVerNum(CurrOrder))=VerWeight(1:iVerNum(CurrOrder))
     end subroutine
     
+    !TODO: currorder may change!
     subroutine UpdateState()
       implicit none
-      GWeight(1:iGNum)=NewGWeight(1:iGNum)
-      VerWeight(1:iVerNum)=NewVerWeight(1:iVerNum)
+      GWeight(1:iGNum(CurrOrder))=NewGWeight(1:iGNum(CurrOrder))
+      VerWeight(1:iVerNum(CurrOrder))=NewVerWeight(1:iVerNum(CurrOrder))
     end subroutine
-    
     
     subroutine ChangeWeightTableMom(loopindex)
         implicit none
@@ -638,36 +604,35 @@ end subroutine
         double precision :: Tau
         double precision, dimension(D) :: Mom
         call NewState()
-        do i=1, iGNum 
-            if (LoopBases(loopindex, i)==0) then
+        do i=1, iGNum(CurrOrder) 
+            if (LoopBases(loopindex, i, CurrOrder)==0) then
                 cycle !if the loop with #loopindex do not affect the Gline, then do not recalculate 
             endif
     
-            Tau = TauTable(TauBases(2, i))-TauTable(TauBases(1, i))
+            Tau = TauTable(TauBases(2, i, CurrOrder))-TauTable(TauBases(1, i, CurrOrder))
             !Spin = sum(LoopBases(:, i)*LoopSpin(:))
             Spin=1
             do j=1, D
-                Mom(j) = sum(LoopBases(:, i)*LoopMom(j, :))
+                Mom(j) = sum(LoopBases(1:LoopNum(CurrOrder), i, CurrOrder)*LoopMom(j, 1:LoopNum(CurrOrder)))
             enddo
             NewGWeight(i) = Green(Tau, Mom, Spin)
         enddo
     
     
-        do i=1, iVerNum 
+        do i=1, iVerNum(CurrOrder) 
 
-            if (LoopBasesVer(loopindex, i)==0) then
+            if (LoopBasesVer(loopindex, i, CurrOrder)==0) then
               cycle !if the loop with #loopindex do not affect the Gline, then do not recalculate 
             endif
       
-            if (reducibleTable(i)) then
-                NewVerWeight(i) = 0.0
-            else
-              !Spin=sum(LoopBasesVer(:, i)*LoopSpin(:))
-              Spin=1
-              do j=1, D
-                Mom(j)=sum(LoopBasesVer(:, i)*LoopMom(j, :))
-              enddo
-              NewVerWeight(i) = Interaction(0.d0, Mom, Spin)
+            Spin=sum(LoopBasesVer(1:LoopNum(CurrOrder), i, CurrOrder)*LoopSpin(1:LoopNum(CurrOrder)))
+            do j=1, D
+              Mom(j)=sum(LoopBasesVer(1:LoopNum(CurrOrder), i, CurrOrder)*LoopMom(j, 1:LoopNum(CurrOrder)))
+            enddo
+            NewVerWeight(i) = Interaction(0.d0, Mom, Spin)
+            !!!! Reducibility check   !!!!!!!!!!!!!!!!!!
+            if(abs(LoopBasesVer(1, i, CurrOrder))==1 .and. sum(LoopBasesVer(2:LoopNum(CurrOrder), i, CurrOrder)**2)==0) then
+              NewVerWeight(i)=0.0
             endif
         enddo
     
@@ -680,14 +645,14 @@ end subroutine
         double precision :: Tau
         double precision, dimension(D) :: Mom
         call NewState()
-        do i=1, iGNum 
-            if (TauBases(1, i)==Tauindex .or. TauBases(2, i)==Tauindex .or. &
-                TauBases(1, i)==Tauindex+1 .or. TauBases(2, i)==Tauindex+1) then
-                Tau=TauTable(TauBases(2, i))-TauTable(TauBases(1, i))
+        do i=1, iGNum(CurrOrder)
+            if (TauBases(1, i, CurrOrder)==Tauindex .or. TauBases(2, i, CurrOrder)==Tauindex .or. &
+                TauBases(1, i, CurrOrder)==Tauindex+1 .or. TauBases(2, i, CurrOrder)==Tauindex+1) then
+                Tau=TauTable(TauBases(2, i, CurrOrder))-TauTable(TauBases(1, i, CurrOrder))
                 !Spin=sum(LoopBases(:, i)*LoopSpin(:))
                 Spin=1
                 do j=1, D
-                    Mom(j)=sum(LoopBases(:, i)*LoopMom(j, :))
+                    Mom(j)=sum(LoopBases(1:LoopNum(CurrOrder), i, CurrOrder)*LoopMom(j, 1:LoopNum(CurrOrder)))
                 enddo
                 NewGWeight(i)=Green(Tau, Mom, Spin)
             endif
@@ -706,27 +671,22 @@ end subroutine
         !double precision :: Ek1, Ek2
         CalcWeight=0.0
     
-        do i=1, HugenholtzNum
-            GWeight = SymFactor(i)  !initialize weight wiht the symmetry factor
-            do j=1, GNum
-                GWeight = GWeight * NewGWeight(GIndex(i, j))
+        do i=1, HugenholtzNum(CurrOrder)
+            GWeight = SymFactor(i, CurrOrder)  !initialize weight wiht the symmetry factor
+            do j=1, GNum(CurrOrder)
+                GWeight = GWeight * NewGWeight(GIndex(i, j, CurrOrder))
             enddo
-
-            !TempWeight=1.0
-            !do j=1, VerNum
-                !TempWeight = TempWeight * ( NewVerWeight(VerIndex(i,2*j-1)) - NewVerWeight(VerIndex(i,2*j)) )
-            !enddo
 
             !!!!!!!!!!!!!! Calculate Feynman diagram weight with binary tree expansion !!!!!!!!!!!!!!!
 
-            SpinCache(1, 1)=NewVerWeight(VerIndex(i,1))
-            SpinCache(2, 1)=NewVerWeight(VerIndex(i,2))
+            SpinCache(1, 1)=NewVerWeight(VerIndex(i,1, CurrOrder))
+            SpinCache(2, 1)=NewVerWeight(VerIndex(i,2, CurrOrder))
             BlockNum=2
-            do j=2, VerNum
+            do j=2, VerNum(CurrOrder)
               !print *, "j:", j
               do k=1, BlockNum
-                SpinCache(2*k-1, j)=SpinCache(k, j-1)*NewVerWeight(VerIndex(i,2*j-1))
-                SpinCache(2*k, j)=SpinCache(k, j-1)*NewVerWeight(VerIndex(i,2*j))
+                SpinCache(2*k-1, j)=SpinCache(k, j-1)*NewVerWeight(VerIndex(i,2*j-1, CurrOrder))
+                SpinCache(2*k, j)=SpinCache(k, j-1)*NewVerWeight(VerIndex(i,2*j, CurrOrder))
               enddo
               !print *, "Spincahce", j, SpinCache(:, j)
               BlockNum=BlockNum*2
@@ -734,9 +694,9 @@ end subroutine
 
             VerWeight=0.0
             AbsVerWeight=0.0
-            do j=1, 2**(Order-1)
-              VerWeight=VerWeight+SpinCache(j, VerNum)*SpinFactor(j, i)
-              AbsVerWeight=AbsVerWeight+abs(SpinCache(j, VerNum)*SpinFactor(j, i))
+            do j=1, 2**(CurrOrder-1)
+              VerWeight=VerWeight+SpinCache(j, VerNum(CurrOrder))*SpinFactor(j, i, CurrOrder)
+              AbsVerWeight=AbsVerWeight+abs(SpinCache(j, VerNum(CurrOrder))*SpinFactor(j, i, CurrOrder))
             enddo
 
             !if(abs(TempWeight-VerWeight)>1e-7) then
@@ -766,7 +726,7 @@ end subroutine
     
     subroutine Measure()
         implicit none
-        integer :: Spin, Num, i, j, TauBin
+        integer :: Spin, Num, i, j, TauBin, HugenNum
         double precision :: AbsWeight, dQ, Q, Freq, ReWeight, Weight
         double precision, dimension(D) :: Mom
         double precision :: Phase
@@ -794,57 +754,61 @@ end subroutine
         Weight=CalcWeight(1)
     
         !------------- measure sign blessing ------------------
+
+        HugenNum=HugenholtzNum(CurrOrder)
    
-        do i=1, HugenholtzNum
+        do i=1, HugenNum
             F1(i) = F1(i) + DiagWeight(i)/AbsWeight 
             F2(i) = F2(i) + ABS(DiagWeight(i))/AbsWeight
             F3(i) = F3(i) + DiagWeightABS(i)/AbsWeight
         enddo
 
-        F1(HugenholtzNum+1) = F1(HugenholtzNum+1) + SUM(DiagWeight(1:HugenholtzNum))/AbsWeight 
-        F2(HugenholtzNum+1) = F2(HugenholtzNum+1) + ABS(SUM(DiagWeight(1:HugenholtzNum)))/AbsWeight
-        F3(HugenholtzNum+1) = F3(HugenholtzNum+1) + SUM(ABS(DiagWeightABS(1:HugenholtzNum)))/AbsWeight
+        F1(HugenNum+1) = F1(HugenNum+1) + SUM(DiagWeight(1:HugenNum))/AbsWeight 
+        F2(HugenNum+1) = F2(HugenNum+1) + ABS(SUM(DiagWeight(1:HugenNum)))/AbsWeight
+        F3(HugenNum+1) = F3(HugenNum+1) + SUM(ABS(DiagWeightABS(1:HugenNum)))/AbsWeight
 
         !-------------------------------------------------------
-        do i = 1, HugenholtzNum
-          PolarDiag(i, Num) = PolarDiag(i, Num) + DiagWeight(i)/AbsWeight
-          Polarization(Num) = Polarization(Num) + DiagWeight(i)/AbsWeight
+        do i = 1, HugenNum
+          PolarDiag(i, Num, CurrOrder) = PolarDiag(i, Num, CurrOrder) + DiagWeight(i)/AbsWeight
+          Polarization(Num, CurrOrder) = Polarization(Num, CurrOrder) + DiagWeight(i)/AbsWeight
         enddo
         return
     end subroutine
     
-    subroutine SaveToDisk()
+    subroutine SaveToDisk(o)
         implicit none
-        integer :: i, ref, j
+        integer :: i, ref, j, o
         double precision :: Obs
         !Save NormWeight and Polarization to disk
         character*10 :: ID
+        character*10 :: order_str
         character*10 :: DiagIndex
         character*20 :: filename
         write(ID, '(i10)') PID
-        filename="Data/Diag"//trim(adjustl(ID))//".dat"
+        write(order_str, '(i10)') o
+        filename="Data/Diag"//trim(adjustl(order_str))//"_"//trim(adjustl(ID))//".dat"
         write(*,*) "Save to disk ..."
         open(100, status="replace", file=trim(filename))
         write(100, *) "#", Step
-        write(100, *) "#", Polarization(1)
+        write(100, *) "#", Polarization(1, o)
         ref=int(kF/DeltaQ)+1
         do i=1, QBinNum
-            Obs = Polarization(i)
+            Obs = Polarization(i, o)
             write(100, *) norm2(ExtMomMesh(:, i)), Obs
         enddo
         close(100)
     
-        do j=1, HugenholtzNum
+        do j=1, HugenholtzNum(o)
             write(DiagIndex, '(i10)') j
-            filename="Data/Diag"//trim(adjustl(ID))//"_"//trim(adjustl(DiagIndex))//".dat"
+            filename="Data/Diag"//trim(adjustl(order_str))//"_"//trim(adjustl(ID))//"_"//trim(adjustl(DiagIndex))//".dat"
             open(100, status="replace", file=trim(filename))
             write(100, *) "#", Step
-            write(100, *) "#", PolarDiag(j,1)
+            write(100, *) "#", PolarDiag(j,1, o)
             ref=int(kF/DeltaQ)+1
             do i=1, QBinNum
               !Obs=Polarization(i)/sum(abs(Polarization))
               !Obs=Polarization(i)/(sum(abs(Polarization))/QBinNum)
-              Obs=PolarDiag(j, i)
+              Obs=PolarDiag(j, i, o)
               !Obs=Polarization(i)/real(Polarization(ref))
               write(100, *) norm2(ExtMomMesh(:, i)), Obs
             enddo
@@ -853,25 +817,25 @@ end subroutine
         return
     end subroutine
     
-    subroutine SaveToDiskF()
-        implicit none
-        character*20 :: filename
-        integer :: i
-        double precision :: res=0.0
-        do i=1, HugenholtzNum
-            res = res + F2(i)
-        enddo
+    !subroutine SaveToDiskF()
+        !implicit none
+        !character*20 :: filename
+        !integer :: i
+        !double precision :: res=0.0
+        !do i=1, HugenholtzNum
+            !res = res + F2(i)
+        !enddo
 
-        filename="F123.dat"
-        open(100, position='append', file=trim(filename))
-            write(100, *)  "OLD BASES:  q=", LoopMom(1,1) 
-            do i=1, HugenholtzNum+1
-               write(100, *) "Hugenholtz", i,":", F1(i)/F3(HugenholtzNum+1), F2(i)/F3(HugenholtzNum+1), F3(i)/F3(HugenholtzNum+1)
-            enddo
-            write(100, *) "F2   SUM:", res/F3(HugenholtzNum+1)
-        close(100)
+        !filename="F123.dat"
+        !open(100, position='append', file=trim(filename))
+            !write(100, *)  "OLD BASES:  q=", LoopMom(1,1) 
+            !do i=1, HugenholtzNum+1
+               !write(100, *) "Hugenholtz", i,":", F1(i)/F3(HugenholtzNum+1), F2(i)/F3(HugenholtzNum+1), F3(i)/F3(HugenholtzNum+1)
+            !enddo
+            !write(100, *) "F2   SUM:", res/F3(HugenholtzNum+1)
+        !close(100)
         
-    end subroutine
+    !end subroutine
     
     
     double precision function  CalcNorm()
@@ -910,7 +874,7 @@ end subroutine
     
         !print *, "Change Freq", Step
     
-        Num=int(grnd()*Order)*2+1 !1,3,5
+        Num=int(grnd()*CurrOrder)*2+1 !1,3,5
     
         PropStep(1)=PropStep(1)+1.0
         OldTau=TauTable(Num+1) !in the case of Num==1, then TauTable(1)/=TauTable(2)
@@ -943,7 +907,7 @@ end subroutine
         double precision :: Weight
     
         !Num = int( (LoopNum-1)*grnd() ) + 2
-        Num = int( (LoopNum)*grnd() ) + 1
+        Num = int( (LoopNum(CurrOrder))*grnd() ) + 1
     
         PropStep(2) = PropStep(2) + 1.0
         OldMom = LoopMom(:, Num)
@@ -987,8 +951,8 @@ end subroutine
         double precision :: Weight
         !print *, "Change Mom", Step
     
-        Num1=int(grnd()*LoopNum)+1
-        Num2=int(grnd()*LoopNum)+1
+        Num1=int(grnd()*LoopNum(CurrOrder))+1
+        Num2=int(grnd()*LoopNum(CurrOrder))+1
         if(Num1==1 .or. Num2==1) return
         if(Num1==Num2) return
     
@@ -1091,31 +1055,5 @@ end subroutine
         return
     
     end subroutine GenerateNewTau
-
-    subroutine Reducible
-        implicit none
-        integer :: k1, k2, flag 
-        integer, dimension(MaxOrder+1) :: OutLine=0
-
-        OutLine(1) = 1
-        do k1=1, iVerNum 
-
-            flag = 1
-            do k2=1, LoopNum
-                if ( ABS(LoopBasesVer(k2, k1)) .ne. OutLine(k2) ) then
-                    flag = 0
-                    exit
-                end if
-            end do 
-
-            if (flag==1) then 
-                reducibleTable(k1) = .true.
-            else if (flag==0) then
-                reducibleTable(k1) = .false.
-            end if 
-        end do
-
-    end subroutine
-
 
 end program main

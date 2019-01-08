@@ -17,11 +17,13 @@ Index=[1,2,3,4,5]
 Data=[]
 Normalization=0
 
-folder="./Beta10.0_rs1.0/Data/"
+CurrOrder=3
+
+folder="./Beta1.0_rs1.0/Data/"
 os.chdir(folder)
 Num=0
 data0=None
-for f in glob.glob("Diag?.dat"):
+for f in glob.glob("Diag"+str(CurrOrder)+"_"+"?.dat"):
     print f
     Num+=1
     d=np.loadtxt(f)
@@ -38,7 +40,7 @@ data0[:,1]/=Normalization
 for i in Index:
     Num=0
     data=None
-    for f in glob.glob("Diag?_"+str(i)+".dat"):
+    for f in glob.glob("Diag"+str(CurrOrder)+"_?_"+str(i)+".dat"):
         print i, f
         Num+=1
         d=np.loadtxt(f)
