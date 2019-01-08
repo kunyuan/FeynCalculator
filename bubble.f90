@@ -12,7 +12,7 @@ module parameters
   double precision, parameter :: pi=3.1415926
 
   !-- Parameters -------------------------------------------------
-  integer, parameter :: D=2  
+  integer, parameter :: D=3  
   integer, parameter :: UP=1
   integer, parameter :: DOWN=0
   integer, parameter :: MxL=512     !Max size of the system
@@ -115,8 +115,8 @@ program main
     !Beta=10.0
     !rs=1.0
     !Mass2=1.0
-    !kF=(9.0*pi/4.0)**(1.0/3.0)/rs !3D
-    kF=sqrt(2.0)/rs !2D
+    kF=(9.0*pi/4.0)**(1.0/3.0)/rs !3D
+    !kF=sqrt(2.0)/rs !2D
     EF=kF*kF
     Mu=EF
     print *,"Inverse Temperature:", Beta
@@ -245,7 +245,7 @@ program main
     PropStep=0.0
     AcceptStep=0.0
 
-    ExtMomMax = kF
+    ExtMomMax = 3.0*kF
     DeltaQ=ExtMomMax/QBinNum
 
     Polarization=0.0
@@ -321,7 +321,7 @@ end subroutine
     
         do o=1, Order
           !TODO: test only
-          if(o/=CurrOrder) cycle
+          !if(o/=CurrOrder) cycle
 
           OffDiag = 0
           Offset = 0
@@ -359,11 +359,14 @@ end subroutine
                       Read(10, *)  LoopBases(baseNum, Offset+1:Offset+GNum(o), o)
                   end do
                   Read(10, *) charc
-                  do baseNum=1, LoopNum(o)
-                      Read(10, *)  LoopBasesVer(baseNum, OffVer+1:OffVer+2*VerNum(o), o)
-                  end do
-                  Read(10, *) charc
-                  Read(10, *) SpinFactor(1:2**VerNum(o), numDiagV, o)
+
+                  if(o>1) then
+                    do baseNum=1, LoopNum(o)
+                        Read(10, *)  LoopBasesVer(baseNum, OffVer+1:OffVer+2*VerNum(o), o)
+                    end do
+                    Read(10, *) charc
+                    Read(10, *) SpinFactor(1:2**VerNum(o), numDiagV, o)
+                  endif
       
                   OffDiag = OffDiag + DiagNum1H(o)
                   Offset = Offset + GNum(o)
@@ -678,45 +681,48 @@ end subroutine
             enddo
 
             !!!!!!!!!!!!!! Calculate Feynman diagram weight with binary tree expansion !!!!!!!!!!!!!!!
-
-            SpinCache(1, 1)=NewVerWeight(VerIndex(i,1, CurrOrder))
-            SpinCache(2, 1)=NewVerWeight(VerIndex(i,2, CurrOrder))
-            BlockNum=2
-            do j=2, VerNum(CurrOrder)
-              !print *, "j:", j
-              do k=1, BlockNum
-                SpinCache(2*k-1, j)=SpinCache(k, j-1)*NewVerWeight(VerIndex(i,2*j-1, CurrOrder))
-                SpinCache(2*k, j)=SpinCache(k, j-1)*NewVerWeight(VerIndex(i,2*j, CurrOrder))
+            if(CurrOrder==1) then
+              VerWeight=1.0
+              AbsVerWeight=1.0
+            else
+              SpinCache(1, 1)=NewVerWeight(VerIndex(i,1, CurrOrder))
+              SpinCache(2, 1)=NewVerWeight(VerIndex(i,2, CurrOrder))
+              BlockNum=2
+              do j=2, VerNum(CurrOrder)
+                !print *, "j:", j
+                do k=1, BlockNum
+                  SpinCache(2*k-1, j)=SpinCache(k, j-1)*NewVerWeight(VerIndex(i,2*j-1, CurrOrder))
+                  SpinCache(2*k, j)=SpinCache(k, j-1)*NewVerWeight(VerIndex(i,2*j, CurrOrder))
+                enddo
+                !print *, "Spincahce", j, SpinCache(:, j)
+                BlockNum=BlockNum*2
               enddo
-              !print *, "Spincahce", j, SpinCache(:, j)
-              BlockNum=BlockNum*2
-            enddo
 
-            VerWeight=0.0
-            AbsVerWeight=0.0
-            do j=1, 2**(CurrOrder-1)
-              VerWeight=VerWeight+SpinCache(j, VerNum(CurrOrder))*SpinFactor(j, i, CurrOrder)
-              AbsVerWeight=AbsVerWeight+abs(SpinCache(j, VerNum(CurrOrder))*SpinFactor(j, i, CurrOrder))
-            enddo
+              VerWeight=0.0
+              AbsVerWeight=0.0
+              do j=1, 2**(CurrOrder-1)
+                VerWeight=VerWeight+SpinCache(j, VerNum(CurrOrder))*SpinFactor(j, i, CurrOrder)
+                AbsVerWeight=AbsVerWeight+abs(SpinCache(j, VerNum(CurrOrder))*SpinFactor(j, i, CurrOrder))
+              enddo
 
-            !if(abs(TempWeight-VerWeight)>1e-7) then
-              !print *, "binary tree fail", TempWeight, VerWeight
-              !!print *, SpinFactor(:,i)
-              !print *, SpinCache(:, 1)
-              !print *, SpinCache(:, 2)
-              !print *, NewVerWeight(VerIndex(i, 1))
-              !print *, NewVerWeight(VerIndex(i, 2))
-              !print *, NewVerWeight(VerIndex(i, 3))
-              !print *, NewVerWeight(VerIndex(i, 4))
-              !stop
-            !endif
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              !if(abs(TempWeight-VerWeight)>1e-7) then
+                !print *, "binary tree fail", TempWeight, VerWeight
+                !!print *, SpinFactor(:,i)
+                !print *, SpinCache(:, 1)
+                !print *, SpinCache(:, 2)
+                !print *, NewVerWeight(VerIndex(i, 1))
+                !print *, NewVerWeight(VerIndex(i, 2))
+                !print *, NewVerWeight(VerIndex(i, 3))
+                !print *, NewVerWeight(VerIndex(i, 4))
+                !stop
+              !endif
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            endif
 
             if(SaveWeight==1) then
               DiagWeight(i) = GWeight*VerWeight
               DiagWeightABS(i) = abs(GWeight)*abs(AbsVerWeight)
             endif
-
             !CalcWeight = CalcWeight + abs(GWeight*VerWeight)
             CalcWeight = CalcWeight + GWeight*VerWeight
         enddo

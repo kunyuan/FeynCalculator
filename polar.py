@@ -8,18 +8,18 @@ mat.rcParams["font.family"] = "Times New Roman"
 size=12
 
 rs=1
-# kF=(9.0*np.pi/4.0)**(1.0/3.0)/rs #3D
-kF=np.sqrt(2.0)/rs #2D
+kF=(9.0*np.pi/4.0)**(1.0/3.0)/rs #3D
+# kF=np.sqrt(2.0)/rs #2D
 
 # Index=[1,2,3,4]
-Index=[1,2,3,4,5]
-# Index=[1,]
+# Index=[1,2,3,4,5]
+Index=[1,]
 Data=[]
 Normalization=0
 
-CurrOrder=3
+CurrOrder=1
 
-folder="./Beta1.0_rs1.0/Data/"
+folder="./Beta10.0_rs1.0/Data/"
 os.chdir(folder)
 Num=0
 data0=None
@@ -116,10 +116,10 @@ fig, ax = plt.subplots()
 
 ErrorPlot(ax, data0, 'k', 's', "Total")
 ErrorPlot(ax, Data[0], 'r', 's', "Diag 1")
-ErrorPlot(ax, Data[1], 'b', 's', "Diag 2")
-ErrorPlot(ax, Data[2], 'g', 's', "Diag 3")
-ErrorPlot(ax, Data[3], 'm', 's', "Diag 4")
-ErrorPlot(ax, Data[4], 'c', '*', "Diag 5")
+# ErrorPlot(ax, Data[1], 'b', 's', "Diag 2")
+# ErrorPlot(ax, Data[2], 'g', 's', "Diag 3")
+# ErrorPlot(ax, Data[3], 'm', 's', "Diag 4")
+# ErrorPlot(ax, Data[4], 'c', '*', "Diag 5")
 
 # ErrorPlot(ax, Data[5], 'g', 's', "Diag 6")
 # ErrorPlot(ax, L4, 'm', '<', "$t=1.0$")
@@ -139,7 +139,7 @@ y=0.5*x**w
 
 # ax.plot(x,y,'k-', lw=2)
 
-ax.set_xlim([0.0, 1.0])
+# ax.set_xlim([0.0, 1.0])
 # ax.set_xticks([0.0,0.04,0.08,0.12])
 # ax.set_yticks([0.35,0.4,0.45,0.5])
 # ax.set_ylim([-0.01, 0.0])
