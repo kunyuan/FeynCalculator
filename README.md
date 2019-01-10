@@ -1,2 +1,3 @@
-# phi4_RG
-simple RG approach to phi4
+# FeynCaculator
+
+This small code provides a simple method to calculate Feynman diagrams for generic quantum many-body systems.
