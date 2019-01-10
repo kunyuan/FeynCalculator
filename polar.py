@@ -17,7 +17,7 @@ Index=[1,]
 Data=[]
 Normalization=0
 
-CurrOrder=1
+CurrOrder=2
 
 folder="./Beta10.0_rs1.0/Data/"
 os.chdir(folder)
@@ -89,7 +89,7 @@ for i in Index:
 
 def ErrorPlot(p, data, color, marker, label=None, size=4):
     data[:,0]/=kF
-    data[:,1]-=data[0,1]
+    # data[:,1]-=data[0,1]
     p.plot(data[:,0],data[:,1],marker=marker,c=color, label=label,lw=1, markeredgecolor="None", linestyle="--", markersize=size)
     # p.errorbar(data[:,0],data[:,1], yerr=data[:,2], c=color, ecolor=color, capsize=0, linestyle="None")
     # p.fill_between(data[:,0], data[:,1]-data[:,2], data[:,1]+data[:,2], alpha=0.5, facecolor=color, edgecolor=color)
@@ -139,7 +139,7 @@ y=0.5*x**w
 
 # ax.plot(x,y,'k-', lw=2)
 
-# ax.set_xlim([0.0, 1.0])
+ax.set_xlim([0.0, 3.0])
 # ax.set_xticks([0.0,0.04,0.08,0.12])
 # ax.set_yticks([0.35,0.4,0.45,0.5])
 # ax.set_ylim([-0.01, 0.0])

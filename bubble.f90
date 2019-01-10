@@ -26,7 +26,7 @@ module parameters
   double precision :: Mass2
   double precision :: TotalStep  !total steps of this MC simulation
   double precision :: Step    ! a counter to keep track of the current step number
-  integer, parameter :: UpdateNum=2    ! number of updates
+  integer, parameter :: UpdateNum=4    ! number of updates
   integer                      :: Seed                   ! random-number seed
   double precision, dimension(UpdateNum) :: PropStep
   double precision, dimension(UpdateNum) :: AcceptStep
@@ -138,15 +138,20 @@ program main
     print *, "Start simulation..."
     do while (Step<TotalStep)
         Step=Step+1.0
+        if(abs(Step-163)<1e-4) then
+          print *, 163
+        endif
         x=grnd()
         if (x<1.0/UpdateNum) then
+          ! continue
           call ChangeTau()
         else if (x<2.0/UpdateNum) then
+          ! continue
           call ChangeMom()
-        else if (x<3.0/UpdateNum) then
-          call NormToPhysical()
-        else if (x<4.0/UpdateNum) then
-          call PhysicalToNorm()
+        ! else if (x<3.0/UpdateNum) then
+        !   call IncreaseOrder()
+        ! else if (x<4.0/UpdateNum) then
+        !   call DecreaseOrder()
         !else if (x<5.0/UpdateNum) then
           !!call ChangeSpin()
           !call SwapMom()
@@ -154,17 +159,20 @@ program main
         !if(mod(int(Step), 4)==0) call Measure()
         call Measure()
   
-        !call DynamicTest()
+        call DynamicTest()
   
         PrintCounter=PrintCounter+1
         if (PrintCounter==1e7)  then
           write(*,*) 
           write(*,"(f8.2, A15)") Step/1e6, "million steps"
-          write(*,"(A14, A6, f8.3, A5, f8.3)") "Accept Ratio: ", "Freq:", AcceptStep(1)/PropStep(1),&
-             & "Mom:", AcceptStep(2)/PropStep(2)
+          write(*,"(A14, A6, f8.3, A5, f8.3)") "Accept Ratio: ", "Incr:", AcceptStep(1)/PropStep(1),&
+             & "Dec:", AcceptStep(2)/PropStep(2)
+          write(*,"(A14, A6, f8.3, A5, f8.3)") "Accept Ratio: ", "Tau :", AcceptStep(3)/PropStep(3),&
+             & "Mom:", AcceptStep(3)/PropStep(3)
   !        write(*,"(A14, A6, f8.3)") "Accept Ratio: ", "Swap:", AcceptStep(3)/PropStep(3)
           PrintCounter=0
   
+          print *, "order:", CurrOrder
           print *, "mom1", norm2(LoopMom(:,1)), LoopMom(:,1)
           print *, "mom2", norm2(LoopMom(:,2)), LoopMom(:,2)
           print *, "Momnorm", norm2(LoopMom(:,2)+LoopMom(:,1))**2-Mu, norm2(LoopMom(:,2))**2-Mu
@@ -175,44 +183,22 @@ program main
           print *, "weight", OldWeight
         endif
         if (PrintCounter==1e8)  then
-          !do o=1, Order
-            call SaveToDisk(CurrOrder)
-          !enddo
+          do o=1, Order
+            call SaveToDisk(o)
+          enddo
         endif
+
+        !print *, CurrOrder
+
     end do
 
-    !do o=1, Order
-    print *, "printing..."
-      call SaveToDisk(CurrOrder)
-    !enddo
+    do o=1, Order
+      call SaveToDisk(o)
+    enddo
     
     print *, "End simulation."
   
     CONTAINS
-
-
-!    subroutine ForTest
-!        implicit none
-!        integer :: QNum = 96
-!        double precision :: ddeltaQ
-!
-!        TauTable(1:2) = [ 0.0, 1.2, 1.5, 1.8, 2.0, 2.3 ]
-!        ddeltaQ = 3.0*kF/QNum 
-!
-!        LoopMom(:,1) = [  1.5, 0.0  ]
-!        LoopMom(:,2) = [  1.0, 2.0  ]
-!
-!        call ResetWeightTable()
-!
-!        print *, "momentum=", LoopMom(:,1), LoopMom(:,2)
-!        print *, "GWeight=", GWeight(1:6)
-!        print *, "GWeight=", VerWeight(1:6)
-!
-!        OldWeight = CalcWeight(0)
-!
-!        print *, "OldWeight=", OldWeight 
-!    end subroutine
-
 
   subroutine Test()
     implicit none
@@ -285,8 +271,8 @@ program main
 
 
 
-    call ResetWeightTable()
-    OldWeight = CalcWeight(0)
+    call ResetWeightTable(CurrOrder)
+    OldWeight = CalcWeight(0, CurrOrder)
     call UpdateState()
     !call TestIni(OldWeight)
 end subroutine
@@ -327,7 +313,7 @@ end subroutine
           Offset = 0
           OffVer = 0
 
-          write( Orderstr,'(I3)' )  Order 
+          write( Orderstr,'(I3)' )  o
           fname = 'DiagPolar'//trim(adjustl(Orderstr))//'.txt'
       
           open(unit=10, file=trim(fname), action='read', status="old")
@@ -343,6 +329,8 @@ end subroutine
               DiagNum(o) = DiagNum1H(o) * HugenholtzNum(o)  
               iGNum(o) = GNum(o) * HugenholtzNum(o)
               iVerNum(o) = 2 * VerNum(o)  * HugenholtzNum(o) 
+              !iGNum(o) = 2*Order * HugenholtzNum(o)
+              !iVerNum(o) = 2 * (Order-1)  * HugenholtzNum(o) 
     
               do numDiagV=1, HugenholtzNum(o)
                   GIndex(numDiagV, 1:GNum(o), o) = (/ ((numDiagV-1)*GNum(o)+i, i=1, GNum(o)) /)
@@ -510,14 +498,18 @@ end subroutine
           !print *, "VerWeight", VerWeight(1:VerNum), VerWeightNorm(1:VerNum)
         !endif
     
-        call ResetWeightTable()
-        weight = CalcWeight(0)
+        call ResetWeightTable(CurrOrder)
+        weight = CalcWeight(0, CurrOrder)
         if(abs(weight-OldWeight)>1e-6) then
           print *, "Weight is wrong at step:", Step, weight, OldWeight
+          print *, "Order: ", CurrOrder
           print *, "TauTable", TauTable(1:TauNum(CurrOrder))
           print *, "LoopMom", LoopMom(:, 1:LoopNum(CurrOrder))
           print *, "GWeight", GWeight(1:GNum(CurrOrder)), GWeightNorm(1:GNum(CurrOrder))
           print *, "VerWeight", VerWeight(1:VerNum(CurrOrder)), VerWeightNorm(1:VerNum(CurrOrder))
+
+          print *, "NewGWeight", NewGWeight(1:GNum(CurrOrder)), NewGWeightNorm(1:GNum(CurrOrder))
+          print *, "NewVerWeight", NewVerWeight(1:VerNum(CurrOrder)), NewVerWeightNorm(1:VerNum(CurrOrder))
           stop
         endif
     
@@ -556,32 +548,53 @@ end subroutine
           print *, "ExtMom is wrong!",Step, ExtMomBin, ExtMomMesh(:, ExtMomBin), LoopMom(:,1)
         endif
     end subroutine
+
+    integer function IsReducible(index, o)
+      implicit none
+      integer :: index, o
+      !!!! Reducibility check   !!!!!!!!!!!!!!!!!!
+      if(abs(LoopBasesVer(1, index, o))==1 .and. sum(LoopBasesVer(2:LoopNum(o), index, o)**2)==0) then
+        IsReducible=1
+      else
+        IsReducible=0
+      endif
+      return
+    end function
    
-    subroutine ResetWeightTable()
+    subroutine ResetWeightTable(NewOrder)
         implicit none
-        integer :: sector, i, j, Spin
+        integer :: i, j, Spin, NewOrder
         double precision :: Tau
         double precision, dimension(D) :: Mom
         !print *, "iGNum", iGNum
         call NewState()
-        do i=1, iGNum(CurrOrder)
-          Tau = TauTable(TauBases(2, i, CurrOrder))-TauTable(TauBases(1, i, CurrOrder))
-          Spin=sum(LoopBases(1:LoopNum(CurrOrder), i, CurrOrder)*LoopSpin(1:LoopNum(CurrOrder)))
+        do i=1, iGNum(NewOrder)
+          Tau = TauTable(TauBases(2, i, NewOrder))-TauTable(TauBases(1, i, NewOrder))
+          Spin=sum(LoopBases(1:LoopNum(NewOrder), i, NewOrder)*LoopSpin(1:LoopNum(NewOrder)))
           do j=1, D
-            Mom(j)=sum(LoopBases(1:LoopNum(CurrOrder), i, CurrOrder)*LoopMom(j, 1:LoopNum(CurrOrder)))
+            Mom(j)=sum(LoopBases(1:LoopNum(NewOrder), i, NewOrder)*LoopMom(j, 1:LoopNum(NewOrder)))
           enddo
           NewGWeight(i)=Green(Tau, Mom, Spin)
+          ! print *, "Tau", Tau
+          ! print *, "Mom", Mom
+          ! print *, "GWeight", Green(Tau, Mom, Spin)
         enddo
     
     
-        do i=1, iVerNum(CurrOrder) 
-            Spin=sum(LoopBasesVer(1:LoopNum(CurrOrder), i, CurrOrder)*LoopSpin(1:LoopNum(CurrOrder)))
+        do i=1, iVerNum(NewOrder) 
+            Spin=sum(LoopBasesVer(1:LoopNum(NewOrder), i, NewOrder)*LoopSpin(1:LoopNum(NewOrder)))
             do j=1, D
-                Mom(j)=sum(LoopBasesVer(1:LoopNum(CurrOrder), i, CurrOrder)*LoopMom(j, 1:LoopNum(CurrOrder)))
+                Mom(j)=sum(LoopBasesVer(1:LoopNum(NewOrder), i, NewOrder)*LoopMom(j, 1:LoopNum(NewOrder)))
             enddo
 
             NewVerWeight(i) = Interaction(0.d0, Mom, Spin)
+            !!!! Reducibility check   !!!!!!!!!!!!!!!!!!
+            if(IsReducible(i, NewOrder)==1) then
+              NewVerWeight(i)=0.0
+            endif
 
+            ! print *, "Mom", Mom
+            ! print *, "VerWeight", Interaction(0.d0, Mom, Spin)
         enddo
     
         return
@@ -590,15 +603,15 @@ end subroutine
     !TODO: currorder may change!
     subroutine NewState()
       implicit none
-      NewGWeight(1:iGNum(CurrOrder))=GWeight(1:iGNum(CurrOrder))
-      NewVerWeight(1:iVerNum(CurrOrder))=VerWeight(1:iVerNum(CurrOrder))
+      NewGWeight(1:iGNum(Order))=GWeight(1:iGNum(Order))
+      NewVerWeight(1:iVerNum(Order))=VerWeight(1:iVerNum(Order))
     end subroutine
     
     !TODO: currorder may change!
     subroutine UpdateState()
       implicit none
-      GWeight(1:iGNum(CurrOrder))=NewGWeight(1:iGNum(CurrOrder))
-      VerWeight(1:iVerNum(CurrOrder))=NewVerWeight(1:iVerNum(CurrOrder))
+      GWeight(1:iGNum(Order))=NewGWeight(1:iGNum(Order))
+      VerWeight(1:iVerNum(Order))=NewVerWeight(1:iVerNum(Order))
     end subroutine
     
     subroutine ChangeWeightTableMom(loopindex)
@@ -634,7 +647,7 @@ end subroutine
             enddo
             NewVerWeight(i) = Interaction(0.d0, Mom, Spin)
             !!!! Reducibility check   !!!!!!!!!!!!!!!!!!
-            if(abs(LoopBasesVer(1, i, CurrOrder))==1 .and. sum(LoopBasesVer(2:LoopNum(CurrOrder), i, CurrOrder)**2)==0) then
+            if(IsReducible(i, CurrOrder)==1) then
               NewVerWeight(i)=0.0
             endif
         enddo
@@ -651,6 +664,7 @@ end subroutine
         do i=1, iGNum(CurrOrder)
             if (TauBases(1, i, CurrOrder)==Tauindex .or. TauBases(2, i, CurrOrder)==Tauindex .or. &
                 TauBases(1, i, CurrOrder)==Tauindex+1 .or. TauBases(2, i, CurrOrder)==Tauindex+1) then
+
                 Tau=TauTable(TauBases(2, i, CurrOrder))-TauTable(TauBases(1, i, CurrOrder))
                 !Spin=sum(LoopBases(:, i)*LoopSpin(:))
                 Spin=1
@@ -662,11 +676,11 @@ end subroutine
         enddo
         return
     end subroutine
-    
-    double precision function CalcWeight(SaveWeight)
+
+    double precision function CalcWeight(SaveWeight, NewOrder)
         !calculate the weight for ALL diagrams in a given sector
         implicit none
-        integer :: sector, i, j, k, BlockNum, Shift
+        integer :: sector, i, j, k, BlockNum, Shift, NewOrder
         double precision :: Q2, Q
         double precision :: GWeight, TempWeight, VerWeight, AbsVerWeight
         integer :: SaveWeight
@@ -674,25 +688,25 @@ end subroutine
         !double precision :: Ek1, Ek2
         CalcWeight=0.0
     
-        do i=1, HugenholtzNum(CurrOrder)
-            GWeight = SymFactor(i, CurrOrder)  !initialize weight wiht the symmetry factor
-            do j=1, GNum(CurrOrder)
-                GWeight = GWeight * NewGWeight(GIndex(i, j, CurrOrder))
+        do i=1, HugenholtzNum(NewOrder)
+            GWeight = SymFactor(i, NewOrder)  !initialize weight wiht the symmetry factor
+            do j=1, GNum(NewOrder)
+                GWeight = GWeight * NewGWeight(GIndex(i, j, NewOrder))
             enddo
 
             !!!!!!!!!!!!!! Calculate Feynman diagram weight with binary tree expansion !!!!!!!!!!!!!!!
-            if(CurrOrder==1) then
+            if(NewOrder==1) then
               VerWeight=1.0
               AbsVerWeight=1.0
             else
-              SpinCache(1, 1)=NewVerWeight(VerIndex(i,1, CurrOrder))
-              SpinCache(2, 1)=NewVerWeight(VerIndex(i,2, CurrOrder))
+              SpinCache(1, 1)=NewVerWeight(VerIndex(i,1, NewOrder))
+              SpinCache(2, 1)=NewVerWeight(VerIndex(i,2, NewOrder))
               BlockNum=2
-              do j=2, VerNum(CurrOrder)
+              do j=2, VerNum(NewOrder)
                 !print *, "j:", j
                 do k=1, BlockNum
-                  SpinCache(2*k-1, j)=SpinCache(k, j-1)*NewVerWeight(VerIndex(i,2*j-1, CurrOrder))
-                  SpinCache(2*k, j)=SpinCache(k, j-1)*NewVerWeight(VerIndex(i,2*j, CurrOrder))
+                  SpinCache(2*k-1, j)=SpinCache(k, j-1)*NewVerWeight(VerIndex(i,2*j-1, NewOrder))
+                  SpinCache(2*k, j)=SpinCache(k, j-1)*NewVerWeight(VerIndex(i,2*j, NewOrder))
                 enddo
                 !print *, "Spincahce", j, SpinCache(:, j)
                 BlockNum=BlockNum*2
@@ -700,9 +714,9 @@ end subroutine
 
               VerWeight=0.0
               AbsVerWeight=0.0
-              do j=1, 2**(CurrOrder-1)
-                VerWeight=VerWeight+SpinCache(j, VerNum(CurrOrder))*SpinFactor(j, i, CurrOrder)
-                AbsVerWeight=AbsVerWeight+abs(SpinCache(j, VerNum(CurrOrder))*SpinFactor(j, i, CurrOrder))
+              do j=1, 2**(NewOrder-1)
+                VerWeight=VerWeight+SpinCache(j, VerNum(NewOrder))*SpinFactor(j, i, NewOrder)
+                AbsVerWeight=AbsVerWeight+abs(SpinCache(j, VerNum(NewOrder))*SpinFactor(j, i, NewOrder))
               enddo
 
               !if(abs(TempWeight-VerWeight)>1e-7) then
@@ -757,7 +771,7 @@ end subroutine
         !endif
     
         call NewState()
-        Weight=CalcWeight(1)
+        Weight=CalcWeight(1, CurrOrder)
     
         !------------- measure sign blessing ------------------
 
@@ -800,7 +814,7 @@ end subroutine
         ref=int(kF/DeltaQ)+1
         do i=1, QBinNum
             Obs = Polarization(i, o)
-            write(100, *) norm2(ExtMomMesh(:, i)), Obs
+            write(100, *) norm2(ExtMomMesh(:, i)), Obs*GetNorm()**(o-1)
         enddo
         close(100)
     
@@ -816,7 +830,7 @@ end subroutine
               !Obs=Polarization(i)/(sum(abs(Polarization))/QBinNum)
               Obs=PolarDiag(j, i, o)
               !Obs=Polarization(i)/real(Polarization(ref))
-              write(100, *) norm2(ExtMomMesh(:, i)), Obs
+              write(100, *) norm2(ExtMomMesh(:, i)), Obs*GetNorm()**(o-1)
             enddo
             close(100)
         enddo
@@ -843,33 +857,87 @@ end subroutine
         
     !end subroutine
     
-    
-    double precision function  CalcNorm()
-        implicit none
-    
-        CalcNorm = normConstant
-    
-    end function
-    
-    
-      
-    subroutine NormToPhysical()
-      !increase diagram order by one/change normalization diagram to physical diagram
-        implicit none
-        if (Sector==PHYSICAL) return
-        !Weight = CalcNorm()
-        return
-    end subroutine
-    
-      subroutine PhysicalToNorm()
-      !decrease diagram order by one/change physical diagram to normalization diagram
-        implicit none
-        if (Sector==NORMALIZATION) return
-        !if the current diagrams are already in normalization sector, then return
-        return
+      subroutine IncreaseOrder()
+        !increase diagram order by one/change normalization diagram to physical diagram
+          implicit none
+          integer :: tNum,i
+          double precision :: NewTau
+          double precision :: R, Weight, amp, dK, theta, phi
+          double precision, dimension(D) :: NewMom
+          if (CurrOrder==Order) return
+          PropStep(1)=PropStep(1)+1.0
+
+          ! Generate New Tau
+          NewTau=grnd()*Beta
+
+          ! Generate New Mom
+          dK=kF/sqrt(Beta)/2.0
+          amp=kF+(grnd()-0.5)*2.0*dK
+          !kF-dK<amp<kF+dK
+          theta=pi*grnd()
+          phi=2.0*pi*grnd()
+          NewMom(1)=amp*sin(theta)*cos(phi)
+          NewMom(2)=amp*sin(theta)*sin(phi)
+          NewMom(3)=amp*cos(theta)
+
+          ! print *, "   "
+          ! print *, "Before ..."
+          ! do i=1, LoopNum(CurrOrder)+1
+          !   print *,i, ": ", LoopMom(:, i)
+          ! enddo
+
+          tNum=2*CurrOrder+1
+          TauTable(tNum)=NewTau
+          TauTable(tNum+1)=NewTau
+          LoopMom(:, LoopNum(CurrOrder)+1)=NewMom
+
+          ! print *, "After ..."
+          ! do i=1, LoopNum(CurrOrder)+1
+          !   print *,i, ": ", LoopMom(:, i)
+          ! enddo
+
+
+          call ResetWeightTable(CurrOrder+1)
+          Weight = CalcWeight(0, CurrOrder+1)
+
+          ! print *, LoopNum(CurrOrder), NewMom
+          ! print *, "weight        ", NewTau, norm2(NewMom)/kF, Weight, OldWeight
+
+          R=abs(Weight)/abs(OldWeight)
+          if(grnd()<R) then
+            AcceptStep(1)=AcceptStep(1)+1.0
+            OldWeight=Weight
+            CurrOrder=CurrOrder+1
+            call UpdateState()
+          endif
+          return
       end subroutine
     
-      !subroutine RollBack()
+      subroutine DecreaseOrder()
+      !decrease diagram order by one/change physical diagram to normalization diagram
+        implicit none
+        double precision :: R, Weight
+        double precision :: Kamp, dK
+        if (CurrOrder==1) return
+        !if the current diagrams are already in normalization sector, then return
+
+        !Get proper K proposed probability
+        dK=kF/sqrt(Beta)/2.0
+        Kamp=norm2(LoopMom(:, LoopNum(CurrOrder)))
+        if(Kamp<kF-dK .or. Kamp>kF+dK) return
+
+        PropStep(2)=PropStep(2)+1.0
+        call ResetWeightTable(CurrOrder-1)
+        Weight = CalcWeight(0, CurrOrder-1)
+        R=abs(Weight)/abs(OldWeight)
+        if(grnd()<R) then
+          AcceptStep(2)=AcceptStep(2)+1.0
+          OldWeight=Weight
+          CurrOrder=CurrOrder-1
+          call UpdateState()
+        endif
+        return
+      end subroutine
     
       subroutine ChangeTau()
       !randomly choose a vertex, change the time variable
@@ -882,17 +950,17 @@ end subroutine
     
         Num=int(grnd()*CurrOrder)*2+1 !1,3,5
     
-        PropStep(1)=PropStep(1)+1.0
-        OldTau=TauTable(Num+1) !in the case of Num==1, then TauTable(1)/=TauTable(2)
+        PropStep(3)=PropStep(3)+1.0
+        OldTau=TauTable(Num+1) !in the case of Num==1, TauTable(1)/=TauTable(2)
         call GenerateNewTau(OldTau, NewTau, prop)
         TauTable(Num+1)=NewTau
         if(Num/=1) TauTable(Num)=NewTau
         call ChangeWeightTableTau(Num)
-        Weight = CalcWeight(0)
+        Weight = CalcWeight(0, CurrOrder)
         R=prop*abs(Weight)/abs(OldWeight)
         if(grnd()<R) then
           !print *, abs(Weight), abs(OldWeight)
-          AcceptStep(1)=AcceptStep(1)+1.0
+          AcceptStep(3)=AcceptStep(3)+1.0
           OldWeight=Weight
           call UpdateState()
         else
@@ -915,7 +983,7 @@ end subroutine
         !Num = int( (LoopNum-1)*grnd() ) + 2
         Num = int( (LoopNum(CurrOrder))*grnd() ) + 1
     
-        PropStep(2) = PropStep(2) + 1.0
+        PropStep(4) = PropStep(4) + 1.0
         OldMom = LoopMom(:, Num)
     
         if(Num==1) then
@@ -932,11 +1000,11 @@ end subroutine
         LoopMom(:,Num)=NewMom
     
         call ChangeWeightTableMom(Num)
-        Weight = CalcWeight(0)
+        Weight = CalcWeight(0, CurrOrder)
         R = prop*abs(Weight)/abs(OldWeight)
     
         if(grnd()<R) then
-            AcceptStep(2) = AcceptStep(2)+1.0
+            AcceptStep(4) = AcceptStep(4)+1.0
             OldWeight = Weight
             if(Num==1) ExtMomBin=NewExtMomBin
             call UpdateState()
@@ -962,7 +1030,7 @@ end subroutine
         if(Num1==1 .or. Num2==1) return
         if(Num1==Num2) return
     
-    !    PropStep(3)=PropStep(3)+1.0
+    !    PropStep(5)=PropStep(5)+1.0
     
         TempMom1=LoopMom(:, Num1)
         TempMom2=LoopMom(:, Num2)
@@ -970,12 +1038,12 @@ end subroutine
         LoopMom(:,Num1)=TempMom1
         LoopMom(:,Num2)=TempMom2
     
-        call ResetWeightTable()
-        Weight=CalcWeight(0)
+        call ResetWeightTable(CurrOrder)
+        Weight=CalcWeight(0, CurrOrder)
         R=abs(Weight)/abs(OldWeight)
     
         if(grnd()<R) then
-    !      AcceptStep(3)=AcceptStep(3)+1.0
+    !      AcceptStep(5)=AcceptStep(5)+1.0
           OldWeight=Weight
           call UpdateState()
         else
@@ -1061,5 +1129,16 @@ end subroutine
         return
     
     end subroutine GenerateNewTau
+
+    double precision function GetNorm()
+      implicit none
+      if(D==3) then
+        GetNorm=Beta*4.0/3.0*pi*kF**3*(8.0-1/8.0)
+      else if (D==2) then
+        print *, "Not yet implemented!"
+        stop
+      endif
+      return
+    end function
 
 end program main
