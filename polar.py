@@ -9,13 +9,13 @@ size=12
 
 rs=1
 Beta=10
-kF=(9.0*np.pi/4.0)**(1.0/3.0)/rs #3D
+# kF=(9.0*np.pi/4.0)**(1.0/3.0)/rs #3D
 # Bubble=0.08871  # 3D, Beta=0.5, rs=1
-Bubble=0.09720  #3D, Beta=10, rs=1
+# Bubble=0.09720  #3D, Beta=10, rs=1
 
-# kF=np.sqrt(2.0)/rs #2D
+kF=np.sqrt(2.0)/rs #2D
 # Bubble=0.11635  #2D, Beta=0.5, rs=1
-# Bubble=0.15916  #2D, Beta=10, rs=1
+Bubble=0.15916  #2D, Beta=10, rs=1
 
 ScanOrder=[1,2,3]
 # ScanOrder=[2]
@@ -56,8 +56,8 @@ for order in ScanOrder:
 
     DataAll[order]=np.array(data0)
 
+    Data[order]=[]
     for i in Index[order]:
-        Data[i]=[]
         Num=0
         data=None
         # for f in glob.glob("Diag"+str(order)+"_*_"+str(i)+".dat"):
@@ -76,10 +76,12 @@ for order in ScanOrder:
         data[:,1]/=Normalization
         data[:,1]*=(-1)**(order-1)
         # print data
-        Data[i].append(np.array(data))
+        Data[order].append(np.array(data))
 
 # Data[2][0][:,1]/=8.0*np.pi/(1.0+Data[2][0][:,0]**2)
 # Data[2][0][:,1]=-(Data[2][0][:,1])**0.5
+
+# print len(Data[3])
         
 
 def ErrorPlot(p, data, color, marker, label=None, size=4):
@@ -102,13 +104,12 @@ for i in range(len(ScanOrder)):
     o=ScanOrder[i]
     ErrorPlot(ax, DataAll[o], ColorList[i], 's', "Order {0}".format(o))
 
-# ErrorPlot(ax, DataAll[3], 'g', 'o', "Order 3")
 # ErrorPlot(ax, Data[2][1], 'b', 'o', "Order 2-Order 2")
-# ErrorPlot(ax, Data[0], 'r', 's', "Diag 1")
-# ErrorPlot(ax, Data[1], 'b', 's', "Diag 2")
-# ErrorPlot(ax, Data[2], 'g', 's', "Diag 3")
-# ErrorPlot(ax, Data[3], 'm', 's', "Diag 4")
-# ErrorPlot(ax, Data[4], 'c', '*', "Diag 5")
+ErrorPlot(ax, Data[2][0], 'r', 's', "Diag 1")
+ErrorPlot(ax, Data[3][1], 'b', 's', "Diag 2")
+ErrorPlot(ax, Data[3][2], 'g', 's', "Diag 3")
+ErrorPlot(ax, Data[3][3], 'm', 's', "Diag 4")
+ErrorPlot(ax, Data[3][4], 'c', '*', "Diag 5")
 
 # ErrorPlot(ax, Data[5], 'g', 's', "Diag 6")
 

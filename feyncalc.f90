@@ -12,7 +12,7 @@ module parameters
   double precision, parameter :: pi=3.1415926
 
   !-- Parameters -------------------------------------------------
-  integer, parameter :: D=3   !D=2 or D=3  
+  integer, parameter :: D=2   !D=2 or D=3  
   integer, parameter :: UP=1
   integer, parameter :: DOWN=0
   integer, parameter :: MxL=512     !Max size of the system
