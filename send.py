@@ -3,11 +3,11 @@ import random
 import os, sys
 IsCluster=False
 sourcedir="./"
-execute="bubble"
+execute="feyncalc"
 compiler="ifort"
 # compiler="gfortran"
 filelist=os.listdir(sourcedir)
-sourcename=[elem for elem in filelist if elem[0:6]=="bubble" and elem[-3:]=="f90"]
+sourcename=[elem for elem in filelist if elem[0:8]=="feyncalc" and elem[-3:]=="f90"]
 print sourcename
 sourcename.sort()
 sourcename=sourcename[-1]

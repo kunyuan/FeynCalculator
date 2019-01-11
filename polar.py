@@ -8,13 +8,15 @@ mat.rcParams["font.family"] = "Times New Roman"
 size=12
 
 rs=1
-kF=(9.0*np.pi/4.0)**(1.0/3.0)/rs #3D
 Beta=10
+kF=(9.0*np.pi/4.0)**(1.0/3.0)/rs #3D
 # kF=np.sqrt(2.0)/rs #2D
 # Bubble=0.08871  # 3D, Beta=0.5, rs=1
 Bubble=0.09720  #3D, Beta=10, rs=1
+# Bubble=0.11635  #2D, Beta=0.5, rs=1
+# Bubble=0.15916  #2D, Beta=10, rs=1
 
-ScanOrder=[1, 2, 3]
+ScanOrder=[1, 2]
 # ScanOrder=[2]
 Index={}
 Index[1]=[1,]
@@ -95,7 +97,7 @@ fig, ax = plt.subplots()
 
 ErrorPlot(ax, DataAll[1], 'k', 's', "Order 1")
 ErrorPlot(ax, DataAll[2], 'r', 'o', "Order 2")
-ErrorPlot(ax, DataAll[3], 'g', 'o', "Order 3")
+# ErrorPlot(ax, DataAll[3], 'g', 'o', "Order 3")
 # ErrorPlot(ax, Data[2][1], 'b', 'o', "Order 2-Order 2")
 # ErrorPlot(ax, Data[0], 'r', 's', "Diag 1")
 # ErrorPlot(ax, Data[1], 'b', 's', "Diag 2")
