@@ -130,10 +130,10 @@ program main
         call ChangeTau()
       else if (x<2.0/UpdateNum) then
         call ChangeMom()
-      else if (x<3.0/UpdateNum) then
-        call IncreaseOrder()
-      else if (x<4.0/UpdateNum) then
-        call DecreaseOrder()
+      ! else if (x<3.0/UpdateNum) then
+      !   call IncreaseOrder()
+      ! else if (x<4.0/UpdateNum) then
+      !   call DecreaseOrder()
       ! else if (x<5.0/UpdateNum) then
         !!call ChangeSpin()
         !call SwapMom()
