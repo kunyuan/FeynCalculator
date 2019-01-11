@@ -9,12 +9,13 @@ size=12
 
 rs=1
 Beta=10
-# kF=(9.0*np.pi/4.0)**(1.0/3.0)/rs #3D
-kF=np.sqrt(2.0)/rs #2D
+kF=(9.0*np.pi/4.0)**(1.0/3.0)/rs #3D
 # Bubble=0.08871  # 3D, Beta=0.5, rs=1
-# Bubble=0.09720  #3D, Beta=10, rs=1
+Bubble=0.09720  #3D, Beta=10, rs=1
+
+# kF=np.sqrt(2.0)/rs #2D
 # Bubble=0.11635  #2D, Beta=0.5, rs=1
-Bubble=0.15916  #2D, Beta=10, rs=1
+# Bubble=0.15916  #2D, Beta=10, rs=1
 
 ScanOrder=[1,2]
 # ScanOrder=[2]
