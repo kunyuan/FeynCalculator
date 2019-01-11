@@ -40,7 +40,9 @@ module parameters
   integer, parameter :: MaxTau=10000 ! Max indepdent vertex number
   integer, dimension(MaxOrder) :: GNum, VerNum, LoopNum, DiagNum, TauNum, HugenholtzNum !Number of G, Vertex, Loop, diagram, 
   integer, dimension(MaxOrder) :: iGNum, iVerNum !Number of independent G and Vertex
-  integer, dimension(MaxOrder) :: numDiagV, DiagNum1H
+  integer, dimension(MaxOrder) :: DiagNum1H
+  double precision, dimension(MaxOrder) :: ReWeightFactor  ! reweightfactor for each order
+  double precision, dimension(MaxOrder) :: OrderPartitionSum  ! store partition sum for each order
 
   integer :: CurrOrder  ! keep track of the diagram order for the current state
   double precision               :: CurrWeight !keep track of the weight of the current state
@@ -89,10 +91,12 @@ program main
     use parameters
     implicit none
     double precision :: x
-    integer :: PrintCounter, SaveCounter, o, hum
+    integer :: PrintCounter, SaveCounter, o
   
     print *, 'Beta, rs, Mass2, Order, TotalStep(*1e6), Seed, PID'
     read(*,*)  Beta, rs, Mass2, Order, TotalStep, Seed, PID
+
+    ReWeightFactor(1:3)=(/1.0,1.0,10.0/)
 
     if(D==3) then
       kF=(9.0*pi/4.0)**(1.0/3.0)/rs !3D
@@ -114,8 +118,6 @@ program main
     print *, "Initializing ..."
     call Initialize()
     print *, "Initialized!"
-  !  call ForTest
-  !  stop "stop here"
   
     call Test() !call test first to make sure all subroutines work as expected
   
@@ -142,6 +144,7 @@ program main
       ! call DynamicTest()
 
       PrintCounter=PrintCounter+1
+      OrderPartitionSum(CurrOrder)=OrderPartitionSum(CurrOrder)+1.0/ReWeightFactor(CurrOrder)
       if (PrintCounter==1e7)  then
         write(*,*) 
         write(*,"(f8.2, A15)") Step/1e6, "million steps"
@@ -150,9 +153,10 @@ program main
         write(*,"(A16, f8.3)") "Decrease Order:", AcceptStep(2)/PropStep(2)
         write(*,"(A16, f8.3)") "Change Tau:", AcceptStep(3)/PropStep(3)
         write(*,"(A16, f8.3)") "Change Mom:", AcceptStep(4)/PropStep(4)
+        write(*,"(A20)") "Order Partition Sum: "
+        write(*,*) OrderPartitionSum(1:Order)/sum(OrderPartitionSum(1:Order))
+        ! write(*,*) ReWeightFactor(1:Order)
 !        write(*,"(A14, A6, f8.3)") "Accept Ratio: ", "Swap:", AcceptStep(3)/PropStep(3)
-        PrintCounter=0
-
         ! print *, "order:", CurrOrder
         ! print *, "mom1", norm2(LoopMom(:,1)), LoopMom(:,1)
         ! print *, "mom2", norm2(LoopMom(:,2)), LoopMom(:,2)
@@ -162,11 +166,13 @@ program main
         ! print *, "tau table", TauTable(1:TauNum(CurrOrder))
         ! print *, "green", GWeight(1), GWeight(2)
         ! print *, "weight", CurrWeight
+        ! call ReWeightEachOrder()
       endif
       if (PrintCounter==1e8)  then
         do o=1, Order
           call SaveToDisk(o)
         enddo
+        PrintCounter=0
       endif
 
       !print *, CurrOrder
@@ -180,21 +186,6 @@ program main
     print *, "End simulation."
   
     CONTAINS
-
-    subroutine Test()
-      implicit none
-      integer :: i
-      double precision :: ratio, old, new
-      ! Put all tests here
-      !if (cabs(Green(0.d0, -1.d0)+Green(0.d0, Beta-1.d0))>1e-6) then
-        !print *, "Green's function is not anti-periodic"
-        !stop
-      !endif
-
-      old=0.0
-      !call GenerateNewFreq(old, new, ratio)
-      print *, old, new, ratio
-    end subroutine
 
     subroutine Initialize()
       implicit none
@@ -240,41 +231,87 @@ program main
           TauTable(num+1) = TauTable(num)
         endif
       enddo
-      !TauTable(2)=-0.0001
-
 
       LoopMom(:,1)=ExtMomMesh(:, ExtMomBin)
       LoopMom(:,2:)=kF/sqrt(real(D))
       LoopSpin(1)=0
       LoopSpin(2)=1
 
-
+      ! OrderPartitionSum=1.0
+      ! call ReWeightEachOrder()
 
       call ResetWeightTable(CurrOrder)
       CurrWeight = CalcWeight(0, CurrOrder)
       call UpdateState()
-      !call TestIni(CurrWeight)
     end subroutine
 
+    subroutine Test()
+      implicit none
+      integer :: i
+      double precision :: ratio, old, new
+      ! Put all tests here
+      !if (cabs(Green(0.d0, -1.d0)+Green(0.d0, Beta-1.d0))>1e-6) then
+        !print *, "Green's function is not anti-periodic"
+        !stop
+      !endif
 
-    subroutine TestIni(weight)
-        implicit none
-        double precision :: weight, x
+      ! old=0.0
+      !call GenerateNewFreq(old, new, ratio)
+      ! print *, old, new, ratio
+      return
+    end subroutine
 
-        if (weight>1.0e-20) then
-            return
-        else
-          do while (weight<1.0e-20)
-            x = grnd()
-            if (x<1.0/UpdateNum) then
-              call ChangeTau()
-            else if (x<2.0/UpdateNum) then
-              call ChangeMom()
-            end if
-            weight = CurrWeight
-          end do
-        end if
+    subroutine DynamicTest()
+      implicit none
+      integer   :: i,j
+      double precision   :: weight
+      double precision :: tau,k2, Ek1, Ek2
+  
+      call ResetWeightTable(CurrOrder)
+      weight = CalcWeight(0, CurrOrder)
+      if(abs(weight-CurrWeight)>1e-6) then
+        print *, "Weight is wrong at step:", Step, weight, CurrWeight
+        print *, "Order: ", CurrOrder
+        print *, "TauTable", TauTable(1:TauNum(CurrOrder))
+        print *, "LoopMom", LoopMom(:, 1:LoopNum(CurrOrder))
+        print *, "GWeight", GWeight(1:GNum(CurrOrder))
+        print *, "VerWeight", VerWeight(1:VerNum(CurrOrder))
 
+        print *, "NewGWeight", NewGWeight(1:GNum(CurrOrder))
+        print *, "NewVerWeight", NewVerWeight(1:VerNum(CurrOrder))
+        stop
+      endif
+  
+      do i=1, LoopNum(CurrOrder)
+        do j=1, D
+          if(isnan(LoopMom(j, i))) then
+            print *, "Mom is NaN",Step, j, i, LoopMom(j, i)
+            stop
+          endif
+        enddo
+      enddo
+  
+      do i=1, iVerNum(CurrOrder)
+        if(isnan(VerWeight(i))) then
+          print *, "VerWeight is NaN",Step, i, VerWeight(i)
+          stop
+        endif
+  
+      enddo
+  
+      if(isnan(CurrWeight)) then
+        print *, "CurrWeight is NaN",Step, i, CurrWeight
+        stop
+      endif
+  
+      if(CurrWeight==0.0) then
+        print *, "CurrWeight is zero",Step, i, CurrWeight
+        stop
+      endif
+  
+      if(abs(ExtMomMesh(1, ExtMomBin)-LoopMom(1,1))>1e-6) then
+        print *, "ExtMom is wrong!",Step, ExtMomBin, ExtMomMesh(:, ExtMomBin), LoopMom(:,1)
+      endif
     end subroutine
 
     subroutine ReadDiagram()
@@ -282,7 +319,7 @@ program main
       character(90) :: fname
       character (len=20) :: charc
       integer :: Offset, OffVer, OffDiag
-      integer :: baseNum, i, numDiagV, num, o
+      integer :: baseNum, i, numDiagV, o
       character( len = 3 ) :: Orderstr
 
       do o=1, Order
@@ -339,13 +376,10 @@ program main
     
         CLOSE(unit=10)
       enddo
-!        SymFactor(2:5) = 0.5 * SymFactor(2:5)
-
     end subroutine
 
     !!!!!!!!!!!!!!!!! Green's function for free fermion   !!!!!!!!!!!!!!!!!!!!!!!!!!!!
     double precision function Green(tau ,Mom, spin)
-      !calculate Green's function
       implicit none
       double precision :: tau, k2, s, Ek, x, y, w, r, coshv
       integer :: spin, i
@@ -463,59 +497,126 @@ program main
   !    Interaction=1.0/(Mass2)
       return
     end function Interaction
-    
-    subroutine DynamicTest()
-      implicit none
-      integer   :: i,j
-      double precision   :: weight
-      double precision :: tau,k2, Ek1, Ek2
-  
-      call ResetWeightTable(CurrOrder)
-      weight = CalcWeight(0, CurrOrder)
-      if(abs(weight-CurrWeight)>1e-6) then
-        print *, "Weight is wrong at step:", Step, weight, CurrWeight
-        print *, "Order: ", CurrOrder
-        print *, "TauTable", TauTable(1:TauNum(CurrOrder))
-        print *, "LoopMom", LoopMom(:, 1:LoopNum(CurrOrder))
-        print *, "GWeight", GWeight(1:GNum(CurrOrder))
-        print *, "VerWeight", VerWeight(1:VerNum(CurrOrder))
 
-        print *, "NewGWeight", NewGWeight(1:GNum(CurrOrder))
-        print *, "NewVerWeight", NewVerWeight(1:VerNum(CurrOrder))
-        stop
-      endif
-  
-      do i=1, LoopNum(CurrOrder)
-        do j=1, D
-          if(isnan(LoopMom(j, i))) then
-            print *, "Mom is NaN",Step, j, i, LoopMom(j, i)
-            stop
-          endif
-        enddo
+    !!!!!!!!!!!!!!!!! Balance the occurance of each order in the Markov Chain !!!!!!!!
+    subroutine ReWeightEachOrder()
+      implicit none
+      integer :: o
+      double precision :: TotalWeight
+      TotalWeight=sum(OrderPartitionSum(1:Order))
+      do o=1, Order
+        ReWeightFactor(o)=TotalWeight/OrderPartitionSum(o)
       enddo
-  
-      do i=1, iVerNum(CurrOrder)
-        if(isnan(VerWeight(i))) then
-          print *, "VerWeight is NaN",Step, i, VerWeight(i)
-          stop
-        endif
-  
-      enddo
-  
-      if(isnan(CurrWeight)) then
-        print *, "CurrWeight is NaN",Step, i, CurrWeight
-        stop
-      endif
-  
-      if(CurrWeight==0.0) then
-        print *, "CurrWeight is zero",Step, i, CurrWeight
-        stop
-      endif
-  
-      if(abs(ExtMomMesh(1, ExtMomBin)-LoopMom(1,1))>1e-6) then
-        print *, "ExtMom is wrong!",Step, ExtMomBin, ExtMomMesh(:, ExtMomBin), LoopMom(:,1)
-      endif
+      return
     end subroutine
+
+    subroutine Measure()
+      implicit none
+      integer :: Num, i, HugenNum
+      double precision :: AbsWeight, Q, ReWeight, Weight
+      double precision :: Phase
+  
+      AbsWeight=abs(CurrWeight)
+      Phase=CurrWeight/AbsWeight
+  
+      Num=ExtMomBin
+      Q=norm2(ExtMomMesh(:, ExtMomBin))
+      !ReWeight=exp(Q*Q/1.d0/kF/kF)
+      Reweight=1.0/ReWeightFactor(CurrOrder)
+      ! Reweight=1.0
+  
+      !if(Num<=QBinNum) then
+        !if(D==2) then
+          !!Polarization(Num)=Polarization(Num)+Phase/2.0/pi/Q*Reweight
+          !Polarization(Num)=Polarization(Num)+Phase*Reweight
+        !else
+          !!Polarization(Num)=Polarization(Num)+Phase/4.0/pi/Q/Q*Reweight
+          !Polarization(Num)=Polarization(Num)+Phase*Reweight
+        !endif
+      !endif
+  
+      call NewState()
+      Weight=CalcWeight(1, CurrOrder)
+  
+      !------------- measure sign blessing ------------------
+      HugenNum=HugenholtzNum(CurrOrder)
+  
+      do i=1, HugenNum
+        F1(i) = F1(i) + DiagWeight(i)/AbsWeight*ReWeight
+        F2(i) = F2(i) + ABS(DiagWeight(i))/AbsWeight*ReWeight
+        F3(i) = F3(i) + DiagWeightABS(i)/AbsWeight*ReWeight
+      enddo
+
+      F1(HugenNum+1) = F1(HugenNum+1) + SUM(DiagWeight(1:HugenNum))/AbsWeight*ReWeight
+      F2(HugenNum+1) = F2(HugenNum+1) + ABS(SUM(DiagWeight(1:HugenNum)))/AbsWeight*ReWeight
+      F3(HugenNum+1) = F3(HugenNum+1) + SUM(ABS(DiagWeightABS(1:HugenNum)))/AbsWeight*ReWeight
+      !-------------------------------------------------------
+
+      do i = 1, HugenNum
+        PolarDiag(i, Num, CurrOrder) = PolarDiag(i, Num, CurrOrder) + DiagWeight(i)/AbsWeight*ReWeight
+        Polarization(Num, CurrOrder) = Polarization(Num, CurrOrder) + DiagWeight(i)/AbsWeight*ReWeight
+      enddo
+      return
+    end subroutine
+    
+    subroutine SaveToDisk(o)
+      implicit none
+      integer :: i, ref, j, o
+      double precision :: Obs
+      !Save Polarization to disk
+      character*10 :: ID
+      character*10 :: order_str
+      character*10 :: DiagIndex
+      character*20 :: filename
+      write(ID, '(i10)') PID
+      write(order_str, '(i10)') o
+      filename="Data/Diag"//trim(adjustl(order_str))//"_"//trim(adjustl(ID))//".dat"
+      write(*,*) "Save to disk ..."
+      open(100, status="replace", file=trim(filename))
+      write(100, *) "#", Step
+      write(100, *) "#", Polarization(1, o)
+      ref=int(kF/DeltaQ)+1
+      do i=1, QBinNum
+          Obs = Polarization(i, o)
+          write(100, *) norm2(ExtMomMesh(:, i)), Obs
+      enddo
+      close(100)
+  
+      do j=1, HugenholtzNum(o)
+          write(DiagIndex, '(i10)') j
+          filename="Data/Diag"//trim(adjustl(order_str))//"_"//trim(adjustl(ID))//"_"//trim(adjustl(DiagIndex))//".dat"
+          open(100, status="replace", file=trim(filename))
+          write(100, *) "#", Step
+          write(100, *) "#", PolarDiag(j,1, o)
+          ref=int(kF/DeltaQ)+1
+          do i=1, QBinNum
+            Obs=PolarDiag(j, i, o)
+            write(100, *) norm2(ExtMomMesh(:, i)), Obs
+          enddo
+          close(100)
+      enddo
+      return
+    end subroutine
+    
+    !subroutine SaveToDiskF()
+      !implicit none
+      !character*20 :: filename
+      !integer :: i
+      !double precision :: res=0.0
+      !do i=1, HugenholtzNum
+          !res = res + F2(i)
+      !enddo
+
+      !filename="F123.dat"
+      !open(100, position='append', file=trim(filename))
+          !write(100, *)  "OLD BASES:  q=", LoopMom(1,1) 
+          !do i=1, HugenholtzNum+1
+              !write(100, *) "Hugenholtz", i,":", F1(i)/F3(HugenholtzNum+1), F2(i)/F3(HugenholtzNum+1), F3(i)/F3(HugenholtzNum+1)
+          !enddo
+          !write(100, *) "F2   SUM:", res/F3(HugenholtzNum+1)
+      !close(100)
+        
+    !end subroutine
 
     !check if the Ver is one-interaction-line reducible or not
     integer function IsReducible(index, o)
@@ -681,123 +782,14 @@ program main
         endif
 
         if(SaveWeight==1) then
-          DiagWeight(i) = TotalGWeight*TotalVerWeight/(2.0*pi)**(D*NewOrder)
-          DiagWeightABS(i) = abs(TotalGWeight)*abs(AbsTotalVerWeight)/(2.0*pi)**(D*NewOrder)
+          DiagWeight(i) = TotalGWeight*TotalVerWeight/(2.0*pi)**(D*NewOrder)*ReWeightFactor(NewOrder)
+          DiagWeightABS(i) = abs(TotalGWeight)*abs(AbsTotalVerWeight)/(2.0*pi)**(D*NewOrder)*ReWeightFactor(NewOrder)
         endif
-        CalcWeight = CalcWeight + TotalGWeight*TotalVerWeight/(2.0*pi)**(D*NewOrder)
+        CalcWeight = CalcWeight + TotalGWeight*TotalVerWeight/(2.0*pi)**(D*NewOrder)*ReWeightFactor(NewOrder)
       enddo
       return
     end function CalcWeight
     
-    subroutine Measure()
-      implicit none
-      integer :: Spin, Num, i, j, TauBin, HugenNum
-      double precision :: AbsWeight, dQ, Q, Freq, ReWeight, Weight
-      double precision, dimension(D) :: Mom
-      double precision :: Phase
-      double precision, dimension(4) :: t, u, s, up, sp
-  
-      AbsWeight=abs(CurrWeight)
-      Phase=CurrWeight/AbsWeight
-  
-      Num=ExtMomBin
-      Q=norm2(ExtMomMesh(:, ExtMomBin))
-      !ReWeight=exp(Q*Q/1.d0/kF/kF)
-      Reweight=1.0
-  
-      !if(Num<=QBinNum) then
-        !if(D==2) then
-          !!Polarization(Num)=Polarization(Num)+Phase/2.0/pi/Q*Reweight
-          !Polarization(Num)=Polarization(Num)+Phase*Reweight
-        !else
-          !!Polarization(Num)=Polarization(Num)+Phase/4.0/pi/Q/Q*Reweight
-          !Polarization(Num)=Polarization(Num)+Phase*Reweight
-        !endif
-      !endif
-  
-      call NewState()
-      Weight=CalcWeight(1, CurrOrder)
-  
-      !------------- measure sign blessing ------------------
-
-      HugenNum=HugenholtzNum(CurrOrder)
-  
-      do i=1, HugenNum
-        F1(i) = F1(i) + DiagWeight(i)/AbsWeight 
-        F2(i) = F2(i) + ABS(DiagWeight(i))/AbsWeight
-        F3(i) = F3(i) + DiagWeightABS(i)/AbsWeight
-      enddo
-
-      F1(HugenNum+1) = F1(HugenNum+1) + SUM(DiagWeight(1:HugenNum))/AbsWeight 
-      F2(HugenNum+1) = F2(HugenNum+1) + ABS(SUM(DiagWeight(1:HugenNum)))/AbsWeight
-      F3(HugenNum+1) = F3(HugenNum+1) + SUM(ABS(DiagWeightABS(1:HugenNum)))/AbsWeight
-
-      !-------------------------------------------------------
-      do i = 1, HugenNum
-        PolarDiag(i, Num, CurrOrder) = PolarDiag(i, Num, CurrOrder) + DiagWeight(i)/AbsWeight
-        Polarization(Num, CurrOrder) = Polarization(Num, CurrOrder) + DiagWeight(i)/AbsWeight
-      enddo
-      return
-    end subroutine
-    
-    subroutine SaveToDisk(o)
-      implicit none
-      integer :: i, ref, j, o
-      double precision :: Obs
-      !Save Polarization to disk
-      character*10 :: ID
-      character*10 :: order_str
-      character*10 :: DiagIndex
-      character*20 :: filename
-      write(ID, '(i10)') PID
-      write(order_str, '(i10)') o
-      filename="Data/Diag"//trim(adjustl(order_str))//"_"//trim(adjustl(ID))//".dat"
-      write(*,*) "Save to disk ..."
-      open(100, status="replace", file=trim(filename))
-      write(100, *) "#", Step
-      write(100, *) "#", Polarization(1, o)
-      ref=int(kF/DeltaQ)+1
-      do i=1, QBinNum
-          Obs = Polarization(i, o)
-          write(100, *) norm2(ExtMomMesh(:, i)), Obs
-      enddo
-      close(100)
-  
-      do j=1, HugenholtzNum(o)
-          write(DiagIndex, '(i10)') j
-          filename="Data/Diag"//trim(adjustl(order_str))//"_"//trim(adjustl(ID))//"_"//trim(adjustl(DiagIndex))//".dat"
-          open(100, status="replace", file=trim(filename))
-          write(100, *) "#", Step
-          write(100, *) "#", PolarDiag(j,1, o)
-          ref=int(kF/DeltaQ)+1
-          do i=1, QBinNum
-            Obs=PolarDiag(j, i, o)
-            write(100, *) norm2(ExtMomMesh(:, i)), Obs
-          enddo
-          close(100)
-      enddo
-      return
-    end subroutine
-    
-    !subroutine SaveToDiskF()
-      !implicit none
-      !character*20 :: filename
-      !integer :: i
-      !double precision :: res=0.0
-      !do i=1, HugenholtzNum
-          !res = res + F2(i)
-      !enddo
-
-      !filename="F123.dat"
-      !open(100, position='append', file=trim(filename))
-          !write(100, *)  "OLD BASES:  q=", LoopMom(1,1) 
-          !do i=1, HugenholtzNum+1
-              !write(100, *) "Hugenholtz", i,":", F1(i)/F3(HugenholtzNum+1), F2(i)/F3(HugenholtzNum+1), F3(i)/F3(HugenholtzNum+1)
-          !enddo
-          !write(100, *) "F2   SUM:", res/F3(HugenholtzNum+1)
-      !close(100)
-        
-    !end subroutine
     
     subroutine IncreaseOrder()
       !increase diagram order by one/change normalization diagram to physical diagram
@@ -879,6 +871,7 @@ program main
       if(Kamp<kF-dK .or. Kamp>kF+dK) return
       if(D==3) then
         SinTheta=norm2(LoopMom(1:2, LoopNum(CurrOrder)))/Kamp
+        if(SinTheta==0.0) return
         Prop=1.0/(Beta*2.0*dK*2.0*pi*pi*SinTheta*Kamp**(D-1))
       else if(D==2) then
         Prop=1.0/(Beta*2.0*dK*2.0*pi*Kamp**(D-1))

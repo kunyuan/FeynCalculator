@@ -17,7 +17,7 @@ Bubble=0.09720  #3D, Beta=10, rs=1
 # Bubble=0.11635  #2D, Beta=0.5, rs=1
 # Bubble=0.15916  #2D, Beta=10, rs=1
 
-ScanOrder=[1,2]
+ScanOrder=[1,2,3]
 # ScanOrder=[2]
 Index={}
 Index[1]=[1,]
@@ -66,6 +66,7 @@ for order in ScanOrder:
                 print f
                 Num+=1
                 d=np.loadtxt(folder+f)
+                # print f, d[0,1]
                 if data is None:
                     data=d
                 else:
@@ -74,7 +75,7 @@ for order in ScanOrder:
         data[:,1:]/=Num
         data[:,1]/=Normalization
         data[:,1]*=(-1)**(order-1)
-        print data
+        # print data
         Data[i].append(np.array(data))
 
 # Data[2][0][:,1]/=8.0*np.pi/(1.0+Data[2][0][:,0]**2)
@@ -95,9 +96,12 @@ fig, ax = plt.subplots()
 # ax = fig.add_subplot(122)
 
 # plt.subplot(1,2,2)
+ColorList=['k','r', 'b', 'g', 'm', 'c']
 
-ErrorPlot(ax, DataAll[1], 'k', 's', "Order 1")
-ErrorPlot(ax, DataAll[2], 'r', 'o', "Order 2")
+for i in range(len(ScanOrder)):
+    o=ScanOrder[i]
+    ErrorPlot(ax, DataAll[o], ColorList[i], 's', "Order {0}".format(o))
+
 # ErrorPlot(ax, DataAll[3], 'g', 'o', "Order 3")
 # ErrorPlot(ax, Data[2][1], 'b', 'o', "Order 2-Order 2")
 # ErrorPlot(ax, Data[0], 'r', 's', "Diag 1")
@@ -130,6 +134,6 @@ plt.legend(loc=1, frameon=False, fontsize=size)
 # plt.title("2D density integral")
 plt.tight_layout()
 
-# plt.savefig("polarization.pdf")
+# plt.savefig("spin.pdf")
 plt.show()
 

@@ -595,7 +595,7 @@ def SaveToFile(UniqueDiagrams, Name):
     diag, sym, mom, all_diag=UniqueDiagrams[0]
     order=len(diag)/2
     with open("./Diag{0}{1}.txt".format(Name, order), "a") as f:
-        # f.write("#Order {0}\n".format(order))
+        f.write("# DiagNum\n{0}\n\n".format(len(UniqueDiagrams)))
         for diag, sym, mom, all_diag in UniqueDiagrams:
             f.write("# Topology\n")
             for i in diag:
@@ -756,7 +756,9 @@ if __name__=="__main__":
     PolarDiagramDict={}
     PolarDiagramInvDict={}
     KristjanDiag=[]
+    PolarUniqueDiagrams=[]
     os.system("rm DiagPolar{0}.txt".format(Order))
+
     for d, s, m in zip(DiagList, SymList, MomList): 
         print "working on {0}".format(d)
         # PolarDict=AttachExternalVertex(d)
@@ -861,6 +863,7 @@ if __name__=="__main__":
                 continue
             TotalDiagNum+=1
             UniqueDiagrams.append((g[0], float(len(g))/LessPolarDict[g[0]][1], LessPolarDict[g[0]][0], AllDiagrams))
+            PolarUniqueDiagrams.append((g[0], float(len(g))/LessPolarDict[g[0]][1], LessPolarDict[g[0]][0], AllDiagrams))
 
             KristjanDiag+=get_Unique_Permutation(AllDiagrams)
 
@@ -878,7 +881,8 @@ if __name__=="__main__":
         # SymmetrizeLoops(OptPolarDict, PolarDiagramDict, PolarDiagramInvDict)
             # print "All diagrams: ", AllDiagrams
 
-        SaveToFile(UniqueDiagrams, "Polar")
+
+    SaveToFile(PolarUniqueDiagrams, "Polar")
 
 
     print "Total: {0}, TotalSym: {1}".format(TotalDiagNum, TotalSym)
