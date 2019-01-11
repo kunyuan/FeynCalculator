@@ -138,9 +138,9 @@ program main
     print *, "Start simulation..."
     do while (Step<TotalStep)
         Step=Step+1.0
-        if(abs(Step-163)<1e-4) then
-          print *, 163
-        endif
+        ! if(abs(Step-163)<1e-4) then
+        !   print *, 163
+        ! endif
         x=grnd()
         if (x<1.0/UpdateNum) then
           ! continue
@@ -148,10 +148,10 @@ program main
         else if (x<2.0/UpdateNum) then
           ! continue
           call ChangeMom()
-        ! else if (x<3.0/UpdateNum) then
-        !   call IncreaseOrder()
-        ! else if (x<4.0/UpdateNum) then
-        !   call DecreaseOrder()
+        else if (x<3.0/UpdateNum) then
+          call IncreaseOrder()
+        else if (x<4.0/UpdateNum) then
+          call DecreaseOrder()
         !else if (x<5.0/UpdateNum) then
           !!call ChangeSpin()
           !call SwapMom()
@@ -352,9 +352,9 @@ end subroutine
                     do baseNum=1, LoopNum(o)
                         Read(10, *)  LoopBasesVer(baseNum, OffVer+1:OffVer+2*VerNum(o), o)
                     end do
-                    Read(10, *) charc
-                    Read(10, *) SpinFactor(1:2**VerNum(o), numDiagV, o)
                   endif
+                  Read(10, *) charc
+                  Read(10, *) SpinFactor(1:2**VerNum(o), numDiagV, o)
       
                   OffDiag = OffDiag + DiagNum1H(o)
                   Offset = Offset + GNum(o)
@@ -477,10 +477,10 @@ end subroutine
     
       double precision function Interaction(tau, Mom, spin)
         implicit none
-        double precision :: tau,k2
+        double precision :: tau
         double precision, dimension(D) :: Mom
         integer :: spin
-        Interaction=1.0/(sum(Mom**2)+Mass2)
+        Interaction=8.0*pi/(sum(Mom**2)+Mass2)
     !    Interaction=1.0/(Mass2)
         return
       end function Interaction
@@ -558,6 +558,7 @@ end subroutine
       else
         IsReducible=0
       endif
+      IsReducible=0
       return
     end function
    
@@ -616,7 +617,7 @@ end subroutine
     
     subroutine ChangeWeightTableMom(loopindex)
         implicit none
-        integer :: sector, i, j, Spin, loopindex
+        integer :: i, j, Spin, loopindex
         double precision :: Tau
         double precision, dimension(D) :: Mom
         call NewState()
@@ -657,7 +658,7 @@ end subroutine
     
     subroutine ChangeWeightTableTau(Tauindex)
         implicit none
-        integer :: sector, i, j, Spin, Tauindex
+        integer :: i, j, Spin, Tauindex
         double precision :: Tau
         double precision, dimension(D) :: Mom
         call NewState()
@@ -680,24 +681,24 @@ end subroutine
     double precision function CalcWeight(SaveWeight, NewOrder)
         !calculate the weight for ALL diagrams in a given sector
         implicit none
-        integer :: sector, i, j, k, BlockNum, Shift, NewOrder
-        double precision :: Q2, Q
-        double precision :: GWeight, TempWeight, VerWeight, AbsVerWeight
+        integer :: i, j, k, BlockNum,  NewOrder
+        ! double precision :: Q2, Q
+        double precision :: TotalGWeight, TotalVerWeight, AbsTotalVerWeight
         integer :: SaveWeight
         !double precision, dimension(D) :: Mom1, Mom2
         !double precision :: Ek1, Ek2
         CalcWeight=0.0
     
         do i=1, HugenholtzNum(NewOrder)
-            GWeight = SymFactor(i, NewOrder)  !initialize weight wiht the symmetry factor
+            TotalGWeight = SymFactor(i, NewOrder)  !initialize weight wiht the symmetry factor
             do j=1, GNum(NewOrder)
-                GWeight = GWeight * NewGWeight(GIndex(i, j, NewOrder))
+                TotalGWeight = TotalGWeight * NewGWeight(GIndex(i, j, NewOrder))
             enddo
 
             !!!!!!!!!!!!!! Calculate Feynman diagram weight with binary tree expansion !!!!!!!!!!!!!!!
             if(NewOrder==1) then
-              VerWeight=1.0
-              AbsVerWeight=1.0
+              TotalVerWeight=SpinFactor(1, i, NewOrder)
+              AbsTotalVerWeight=abs(TotalVerWeight)
             else
               SpinCache(1, 1)=NewVerWeight(VerIndex(i,1, NewOrder))
               SpinCache(2, 1)=NewVerWeight(VerIndex(i,2, NewOrder))
@@ -712,11 +713,11 @@ end subroutine
                 BlockNum=BlockNum*2
               enddo
 
-              VerWeight=0.0
-              AbsVerWeight=0.0
+              TotalVerWeight=0.0
+              AbsTotalVerWeight=0.0
               do j=1, 2**(NewOrder-1)
-                VerWeight=VerWeight+SpinCache(j, VerNum(NewOrder))*SpinFactor(j, i, NewOrder)
-                AbsVerWeight=AbsVerWeight+abs(SpinCache(j, VerNum(NewOrder))*SpinFactor(j, i, NewOrder))
+                TotalVerWeight=TotalVerWeight+SpinCache(j, VerNum(NewOrder))*SpinFactor(j, i, NewOrder)
+                AbsTotalVerWeight=AbsTotalVerWeight+abs(SpinCache(j, VerNum(NewOrder))*SpinFactor(j, i, NewOrder))
               enddo
 
               !if(abs(TempWeight-VerWeight)>1e-7) then
@@ -734,13 +735,11 @@ end subroutine
             endif
 
             if(SaveWeight==1) then
-              DiagWeight(i) = GWeight*VerWeight
-              DiagWeightABS(i) = abs(GWeight)*abs(AbsVerWeight)
+              DiagWeight(i) = TotalGWeight*TotalVerWeight/(2.0*pi)**(D*NewOrder)
+              DiagWeightABS(i) = abs(TotalGWeight)*abs(AbsTotalVerWeight)/(2.0*pi)**(D*NewOrder)
             endif
-            !CalcWeight = CalcWeight + abs(GWeight*VerWeight)
-            CalcWeight = CalcWeight + GWeight*VerWeight
+            CalcWeight = CalcWeight + TotalGWeight*TotalVerWeight/(2.0*pi)**(D*NewOrder)
         enddo
-    
         return
     end function CalcWeight
     
@@ -814,7 +813,8 @@ end subroutine
         ref=int(kF/DeltaQ)+1
         do i=1, QBinNum
             Obs = Polarization(i, o)
-            write(100, *) norm2(ExtMomMesh(:, i)), Obs*GetNorm()**(o-1)
+            ! write(100, *) norm2(ExtMomMesh(:, i)), Obs*GetNorm()**(o-1)
+            write(100, *) norm2(ExtMomMesh(:, i)), Obs
         enddo
         close(100)
     
@@ -830,7 +830,8 @@ end subroutine
               !Obs=Polarization(i)/(sum(abs(Polarization))/QBinNum)
               Obs=PolarDiag(j, i, o)
               !Obs=Polarization(i)/real(Polarization(ref))
-              write(100, *) norm2(ExtMomMesh(:, i)), Obs*GetNorm()**(o-1)
+              ! write(100, *) norm2(ExtMomMesh(:, i)), Obs*GetNorm()**(o-1)
+              write(100, *) norm2(ExtMomMesh(:, i)), Obs
             enddo
             close(100)
         enddo
@@ -862,7 +863,7 @@ end subroutine
           implicit none
           integer :: tNum,i
           double precision :: NewTau
-          double precision :: R, Weight, amp, dK, theta, phi
+          double precision :: R, Weight, amp, dK, theta, phi, Prop
           double precision, dimension(D) :: NewMom
           if (CurrOrder==Order) return
           PropStep(1)=PropStep(1)+1.0
@@ -871,14 +872,20 @@ end subroutine
           NewTau=grnd()*Beta
 
           ! Generate New Mom
-          dK=kF/sqrt(Beta)/2.0
-          amp=kF+(grnd()-0.5)*2.0*dK
-          !kF-dK<amp<kF+dK
-          theta=pi*grnd()
-          phi=2.0*pi*grnd()
-          NewMom(1)=amp*sin(theta)*cos(phi)
-          NewMom(2)=amp*sin(theta)*sin(phi)
-          NewMom(3)=amp*cos(theta)
+          ! dK=kF/sqrt(Beta)/4.0
+          ! amp=kF+(grnd()-0.5)*2.0*dK
+          ! !kF-dK<amp<kF+dK
+          ! theta=pi*grnd()
+          ! phi=2.0*pi*grnd()
+          ! NewMom(1)=amp*sin(theta)*cos(phi)
+          ! NewMom(2)=amp*sin(theta)*sin(phi)
+          ! NewMom(3)=amp*cos(theta)
+          ! Prop=Beta*2.0*dK*2.0*pi*pi
+          NewMom(1)=kF*(grnd()-0.5)*2
+          NewMom(2)=kF*(grnd()-0.5)*2
+          NewMom(3)=kF*(grnd()-0.5)*2
+          Prop=Beta*(2.0*kF)**3
+
 
           ! print *, "   "
           ! print *, "Before ..."
@@ -890,6 +897,7 @@ end subroutine
           TauTable(tNum)=NewTau
           TauTable(tNum+1)=NewTau
           LoopMom(:, LoopNum(CurrOrder)+1)=NewMom
+
 
           ! print *, "After ..."
           ! do i=1, LoopNum(CurrOrder)+1
@@ -903,7 +911,7 @@ end subroutine
           ! print *, LoopNum(CurrOrder), NewMom
           ! print *, "weight        ", NewTau, norm2(NewMom)/kF, Weight, OldWeight
 
-          R=abs(Weight)/abs(OldWeight)
+          R=abs(Weight)/abs(OldWeight)*Prop
           if(grnd()<R) then
             AcceptStep(1)=AcceptStep(1)+1.0
             OldWeight=Weight
@@ -916,20 +924,26 @@ end subroutine
       subroutine DecreaseOrder()
       !decrease diagram order by one/change physical diagram to normalization diagram
         implicit none
-        double precision :: R, Weight
+        double precision :: R, Weight, Prop
         double precision :: Kamp, dK
         if (CurrOrder==1) return
         !if the current diagrams are already in normalization sector, then return
 
         !Get proper K proposed probability
-        dK=kF/sqrt(Beta)/2.0
-        Kamp=norm2(LoopMom(:, LoopNum(CurrOrder)))
-        if(Kamp<kF-dK .or. Kamp>kF+dK) return
+        ! dK=kF/sqrt(Beta)/4.0
+        ! Kamp=norm2(LoopMom(:, LoopNum(CurrOrder)))
+        ! if(Kamp<kF-dK .or. Kamp>kF+dK) return
+        ! Prop=1.0/(Beta*2.0*dK*2.0*pi*pi)
+
+        if(abs(LoopMom(1, LoopNum(CurrOrder)))>kF) return
+        if(abs(LoopMom(2, LoopNum(CurrOrder)))>kF) return
+        if(abs(LoopMom(3, LoopNum(CurrOrder)))>kF) return
+        Prop=1.0/(Beta*(2.0*kF)**3)
 
         PropStep(2)=PropStep(2)+1.0
         call ResetWeightTable(CurrOrder-1)
         Weight = CalcWeight(0, CurrOrder-1)
-        R=abs(Weight)/abs(OldWeight)
+        R=abs(Weight)/abs(OldWeight)*Prop
         if(grnd()<R) then
           AcceptStep(2)=AcceptStep(2)+1.0
           OldWeight=Weight

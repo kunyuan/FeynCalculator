@@ -11,4 +11,5 @@
 #Ver Loop Bases
 
 #SpinFactor
+2
 

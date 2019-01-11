@@ -9,48 +9,70 @@ size=12
 
 rs=1
 kF=(9.0*np.pi/4.0)**(1.0/3.0)/rs #3D
+Beta=0.5
+dK=kF/np.sqrt(Beta)/4.0
 # kF=np.sqrt(2.0)/rs #2D
+Bubble=0.08871
 
-# Index=[1,2,3,4]
-# Index=[1,2,3,4,5]
-Index=[1,]
-Data=[]
-Normalization=0
+ScanOrder=[1, 2]
+# ScanOrder=[2]
+Index={}
+Index[1]=[1,]
+Index[2]=[1,2]
+DataAll={}
+Data={}
+Data[1]=[]
+Data[2]=[]
+Normalization=1
 
-CurrOrder=2
 
-folder="./Beta10.0_rs1.0/Data/"
+folder="./Beta0.5_rs1.0/Data/"
 os.chdir(folder)
-Num=0
-data0=None
-for f in glob.glob("Diag"+str(CurrOrder)+"_"+"?.dat"):
-    print f
-    Num+=1
-    d=np.loadtxt(f)
-    if data0 is None:
-        data0=d
-    else:
-        data0[:,1:]+=d[:,1:]
-
-data0[:,1:]/=Num
-# Normalization=abs(sum(data0[:,1]))
-Normalization=data0[0,1]
-data0[:,1]/=Normalization
-
-for i in Index:
+for order in ScanOrder:
     Num=0
-    data=None
-    for f in glob.glob("Diag"+str(CurrOrder)+"_?_"+str(i)+".dat"):
-        print i, f
+    data0=None
+    for f in glob.glob("Diag"+str(order)+"_"+"*.dat"):
+        print f
         Num+=1
         d=np.loadtxt(f)
-        if data is None:
-            data=d
+        if data0 is None:
+            data0=d
         else:
-            data[:,1:]+=d[:,1:]
-    data[:,1:]/=Num
-    data[:,1]/=Normalization
-    Data.append(data)
+            data0[:,1:]+=d[:,1:]
+
+    data0[:,1:]/=Num
+
+    if order==1:
+        Normalization=data0[0,1]/Bubble
+    data0[:,1]/=Normalization
+
+    print data0
+
+    DataAll[order]=np.array(data0)
+
+    for i in Index[order]:
+        Num=0
+        data=None
+        for f in glob.glob("Diag"+str(order)+"_*_"+str(i)+".dat"):
+            print i, f
+            Num+=1
+            d=np.loadtxt(f)
+            if data is None:
+                data=d
+            else:
+                data[:,1:]+=d[:,1:]
+        data[:,1:]/=Num
+        data[:,1]/=Normalization
+        # print data
+        Data[order].append(np.array(data))
+
+Data[2][0][:,1]/=8.0*np.pi/(1.0+Data[2][0][:,0]**2)
+Data[2][0][:,1]=(Data[2][0][:,1])**0.5
+# Data[2][0][:,1]/=Data[2][0][0,1]/0.08871
+print Data[2][0]
+# Data[2][1][:,1]/=Data[2][1][0,1]/0.01367
+print Data[2][1]
+        
 
 # Data[3][:,1]*=2
 
@@ -114,8 +136,11 @@ fig, ax = plt.subplots()
 # ErrorPlot(ax, data3, 'k', 's', "$T=E_F/40$")
 # ErrorPlot(ax, data2, 'b', 's', "Beta=10_1")
 
-ErrorPlot(ax, data0, 'k', 's', "Total")
-ErrorPlot(ax, Data[0], 'r', 's', "Diag 1")
+ErrorPlot(ax, DataAll[1], 'k', 's', "Order 1")
+# ErrorPlot(ax, DataAll[2], 'b', 'o', "Order 2")
+ErrorPlot(ax, Data[2][0], 'r', 'o', "Order 2-Order 1")
+ErrorPlot(ax, Data[2][1], 'b', 'o', "Order 2-Order 2")
+# ErrorPlot(ax, Data[0], 'r', 's', "Diag 1")
 # ErrorPlot(ax, Data[1], 'b', 's', "Diag 2")
 # ErrorPlot(ax, Data[2], 'g', 's', "Diag 3")
 # ErrorPlot(ax, Data[3], 'm', 's', "Diag 4")
