@@ -558,7 +558,6 @@ end subroutine
       else
         IsReducible=0
       endif
-      IsReducible=0
       return
     end function
    
@@ -861,9 +860,9 @@ end subroutine
       subroutine IncreaseOrder()
         !increase diagram order by one/change normalization diagram to physical diagram
           implicit none
-          integer :: tNum,i
+          integer :: tNum
           double precision :: NewTau
-          double precision :: R, Weight, amp, dK, theta, phi, Prop
+          double precision :: R, Weight, Kamp, dK, theta, phi, Prop
           double precision, dimension(D) :: NewMom
           if (CurrOrder==Order) return
           PropStep(1)=PropStep(1)+1.0
@@ -872,19 +871,27 @@ end subroutine
           NewTau=grnd()*Beta
 
           ! Generate New Mom
-          ! dK=kF/sqrt(Beta)/4.0
-          ! amp=kF+(grnd()-0.5)*2.0*dK
-          ! !kF-dK<amp<kF+dK
-          ! theta=pi*grnd()
-          ! phi=2.0*pi*grnd()
-          ! NewMom(1)=amp*sin(theta)*cos(phi)
-          ! NewMom(2)=amp*sin(theta)*sin(phi)
-          ! NewMom(3)=amp*cos(theta)
-          ! Prop=Beta*2.0*dK*2.0*pi*pi
-          NewMom(1)=kF*(grnd()-0.5)*2
-          NewMom(2)=kF*(grnd()-0.5)*2
-          NewMom(3)=kF*(grnd()-0.5)*2
-          Prop=Beta*(2.0*kF)**3
+          !!!! Hard way  !!!!!!!!!!!!!!!!!!!!!!!!!!
+          dK=kF/sqrt(Beta)/4.0
+          Kamp=kF+(grnd()-0.5)*2.0*dK
+          !kF-dK<amp<kF+dK
+          if(Kamp<=0.0) then
+            print *, "K amplitude can not be smaller than zero!"
+            STOP
+          endif
+          theta=pi*grnd()
+          if(theta==0.0) return
+          phi=2.0*pi*grnd()
+          NewMom(1)=Kamp*sin(theta)*cos(phi)
+          NewMom(2)=Kamp*sin(theta)*sin(phi)
+          NewMom(3)=Kamp*cos(theta)
+          Prop=Beta*2.0*dK*2.0*pi*pi*sin(theta)*Kamp**(D-1)
+
+          !!!! Simple way  !!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! NewMom(1)=kF*(grnd()-0.5)*2
+          ! NewMom(2)=kF*(grnd()-0.5)*2
+          ! NewMom(3)=kF*(grnd()-0.5)*2
+          ! Prop=Beta*(2.0*kF)**3
 
 
           ! print *, "   "
@@ -925,20 +932,23 @@ end subroutine
       !decrease diagram order by one/change physical diagram to normalization diagram
         implicit none
         double precision :: R, Weight, Prop
-        double precision :: Kamp, dK
+        double precision :: Kamp, dK, SinTheta
         if (CurrOrder==1) return
         !if the current diagrams are already in normalization sector, then return
 
         !Get proper K proposed probability
-        ! dK=kF/sqrt(Beta)/4.0
-        ! Kamp=norm2(LoopMom(:, LoopNum(CurrOrder)))
-        ! if(Kamp<kF-dK .or. Kamp>kF+dK) return
-        ! Prop=1.0/(Beta*2.0*dK*2.0*pi*pi)
+        !!!!!!! Hard way !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        dK=kF/sqrt(Beta)/4.0
+        Kamp=norm2(LoopMom(:, LoopNum(CurrOrder)))
+        if(Kamp<kF-dK .or. Kamp>kF+dK) return
+        SinTheta=norm2(LoopMom(1:2, LoopNum(CurrOrder)))/Kamp
+        Prop=1.0/(Beta*2.0*dK*2.0*pi*pi*SinTheta*Kamp**(D-1))
 
-        if(abs(LoopMom(1, LoopNum(CurrOrder)))>kF) return
-        if(abs(LoopMom(2, LoopNum(CurrOrder)))>kF) return
-        if(abs(LoopMom(3, LoopNum(CurrOrder)))>kF) return
-        Prop=1.0/(Beta*(2.0*kF)**3)
+        !!!!!!! Simple way !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ! if(abs(LoopMom(1, LoopNum(CurrOrder)))>kF) return
+        ! if(abs(LoopMom(2, LoopNum(CurrOrder)))>kF) return
+        ! if(abs(LoopMom(3, LoopNum(CurrOrder)))>kF) return
+        ! Prop=1.0/(Beta*(2.0*kF)**3)
 
         PropStep(2)=PropStep(2)+1.0
         call ResetWeightTable(CurrOrder-1)
@@ -1143,16 +1153,5 @@ end subroutine
         return
     
     end subroutine GenerateNewTau
-
-    double precision function GetNorm()
-      implicit none
-      if(D==3) then
-        GetNorm=Beta*4.0/3.0*pi*kF**3*(8.0-1/8.0)
-      else if (D==2) then
-        print *, "Not yet implemented!"
-        stop
-      endif
-      return
-    end function
 
 end program main
