@@ -672,20 +672,20 @@ def SaveToFile(UniqueDiagrams, Name):
                 nloop=len(path)
 
                 ########### for spin susceptibility   #####################
-                # print "path", path
-                # Flag=False
-                # for p in path:
-                    # if 0 in p and 1 in p:
-                        # Flag=True
+                print "path", path
+                Flag=False
+                for p in path:
+                    if 0 in p and 1 in p:
+                        Flag=True
 
-                # if Flag==False:
-                    # print "false", d, path
-                    # f.write("{0:2d} ".format(0))
-                # else:
-                    # f.write("{0:2d} ".format(-(-2)**nloop))
+                if Flag==False:
+                    print "false", d, path
+                    f.write("{0:2d} ".format(0))
+                else:
+                    f.write("{0:2d} ".format(-(-2)**nloop))
                 #####################################################
 
-                f.write("{0:2d} ".format(-(-2)**nloop))
+                # f.write("{0:2d} ".format(-(-2)**nloop))
                 # f.write("{0:2d} ".format(-(-1)**nloop))
 
             f.write("\n")
