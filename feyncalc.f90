@@ -131,10 +131,10 @@ program main
         call ChangeTau()
       else if (x<2.0/UpdateNum) then
         call ChangeMom()
-      ! else if (x<3.0/UpdateNum) then
-      !   call IncreaseOrder()
-      ! else if (x<4.0/UpdateNum) then
-      !   call DecreaseOrder()
+      else if (x<3.0/UpdateNum) then
+        call IncreaseOrder()
+      else if (x<4.0/UpdateNum) then
+        call DecreaseOrder()
       ! else if (x<5.0/UpdateNum) then
         !!call ChangeSpin()
         !call SwapMom()
@@ -494,7 +494,7 @@ program main
       double precision :: tau
       double precision, dimension(D) :: Mom
       integer :: spin
-      Interaction=8.0*pi/(sum(Mom**2)*0.2+Mass2)
+      Interaction=8.0*pi/(sum(Mom**2)+Mass2)
   !    Interaction=1.0/(Mass2)
       return
     end function Interaction

@@ -17,8 +17,8 @@ kF=np.sqrt(2.0)/rs #2D
 # Bubble=0.11635  #2D, Beta=0.5, rs=1
 Bubble=0.15916  #2D, Beta=10, rs=1
 
-# ScanOrder=[1,2,3]
-ScanOrder=[3]
+ScanOrder=[1,2,3]
+# ScanOrder=[3]
 Index={}
 Index[1]=[1,]
 Index[2]=[1,]
@@ -104,12 +104,11 @@ for i in range(len(ScanOrder)):
     o=ScanOrder[i]
     ErrorPlot(ax, DataAll[o], ColorList[i], 's', "Order {0}".format(o))
 
-# ErrorPlot(ax, Data[2][1], 'b', 'o', "Order 2-Order 2")
-ErrorPlot(ax, Data[3][0], 'r', 's', "Diag 1")
-ErrorPlot(ax, Data[3][1], 'b', 's', "Diag 2")
-ErrorPlot(ax, Data[3][2], 'g', 's', "Diag 3")
-ErrorPlot(ax, Data[3][3], 'm', 's', "Diag 4")
-ErrorPlot(ax, Data[3][4], 'c', '*', "Diag 5")
+# ErrorPlot(ax, Data[3][0], 'r', 's', "Diag 1")
+# ErrorPlot(ax, Data[3][1], 'b', 's', "Diag 2")
+# ErrorPlot(ax, Data[3][2], 'g', 's', "Diag 3")
+# ErrorPlot(ax, Data[3][3], 'm', 's', "Diag 4")
+# ErrorPlot(ax, Data[3][4], 'c', '*', "Diag 5")
 
 # ErrorPlot(ax, Data[5], 'g', 's', "Diag 6")
 
