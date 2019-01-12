@@ -96,6 +96,7 @@ program main
     print *, 'Beta, rs, Mass2, Order, TotalStep(*1e6), Seed, PID'
     read(*,*)  Beta, rs, Mass2, Order, TotalStep, Seed, PID
 
+    ! For a given order, the bigger factor, the more accurate result 
     ReWeightFactor(1:3)=(/1.0,1.0,10.0/)
 
     if(D==3) then
@@ -493,7 +494,7 @@ program main
       double precision :: tau
       double precision, dimension(D) :: Mom
       integer :: spin
-      Interaction=8.0*pi/(sum(Mom**2)+Mass2)
+      Interaction=8.0*pi/(sum(Mom**2)*0.2+Mass2)
   !    Interaction=1.0/(Mass2)
       return
     end function Interaction
