@@ -33,6 +33,7 @@ Index[1]=[1,]
 Index[2]=[1,]
 Index[3]=[1,2,3,4,5]
 DataAll={}
+DataErrorAll={}
 Data={}
 Normalization=1
 
@@ -133,7 +134,7 @@ y=0.5*x**w
 
 # ax.plot(x,y,'k-', lw=2)
 
-ax.set_xlim([0.0, 8.0])
+ax.set_xlim([0.0, 5.0])
 # ax.set_xticks([0.0,0.04,0.08,0.12])
 # ax.set_yticks([0.35,0.4,0.45,0.5])
 # ax.set_ylim([0.0, 0.12])

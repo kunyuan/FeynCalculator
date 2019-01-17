@@ -14,6 +14,7 @@ module parameters
   !-- Parameters -------------------------------------------------
   integer, parameter :: D=3   !D=2 or D=3  
   integer, parameter :: EQUALTIMEPOLAR=1  !0: measure zero ferq, 1: measure equal time
+  double precision, parameter :: SHIFT=1.00
   integer, parameter :: UP=1
   integer, parameter :: DOWN=0
   integer, parameter :: MxL=512     !Max size of the system
@@ -148,7 +149,7 @@ program main
 
       PrintCounter=PrintCounter+1
       OrderPartitionSum(CurrOrder)=OrderPartitionSum(CurrOrder)+1.0/ReWeightFactor(CurrOrder)
-      if (PrintCounter==1e7)  then
+      if (PrintCounter==1e6)  then
         write(*,*) 
         write(*,"(f8.2, A15)") Step/1e6, "million steps"
         write(*,"(A20)") "Accept Ratio: "
@@ -171,7 +172,7 @@ program main
         ! print *, "weight", CurrWeight
         ! call ReWeightEachOrder()
       endif
-      if (PrintCounter==1e8)  then
+      if (PrintCounter==1e7)  then
         do o=1, Order
           call SaveToDisk(o)
         enddo
@@ -204,7 +205,7 @@ program main
       PropStep=0.0
       AcceptStep=0.0
 
-      ExtMomMax = 8.0*kF
+      ExtMomMax = 5.0*kF
       DeltaQ=ExtMomMax/QBinNum
 
       Polarization=0.0
@@ -530,8 +531,12 @@ program main
       double precision :: tau
       double precision, dimension(D) :: Mom
       integer :: spin, VerType
-      Interaction=8.0*pi/(sum(Mom**2)+Mass2)
-      Interaction=Interaction*(Mass2/(sum(Mom**2)+Mass2))**VerType
+      if(VerType>=0) then
+        Interaction=8.0*pi/(sum(Mom**2)+Mass2)
+        Interaction=Interaction*(Mass2/(sum(Mom**2)+Mass2))**VerType
+      else
+        Interaction=SHIFT
+      endif
   !    Interaction=1.0/(Mass2)
       return
     end function Interaction
