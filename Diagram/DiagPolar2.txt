@@ -1,3 +1,6 @@
+#DiagNum
+1
+
 # Topology
  3  2  1  0 
 # SymmetryFactor
@@ -12,4 +15,5 @@
  0 -1 
 #SpinFactor
 -4  2 
+
 

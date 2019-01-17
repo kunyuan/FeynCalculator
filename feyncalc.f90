@@ -226,7 +226,7 @@ program main
         num=2*i+1
         if(num==1) then
           TauTable(num)=0.0
-          TauTable(num+1)=Beta/2.0
+          TauTable(num+1)=1.e-6
         else
           TauTable(num)=Beta*grnd()
           TauTable(num+1) = TauTable(num)
@@ -379,6 +379,27 @@ program main
       enddo
     end subroutine
 
+    !!!!!!!!!!!!!!!!   Fock diagram self energy   !!!!!!!!!!!!!!!!!!!!!!!!!
+    double precision function SelfEnergy(Mom)
+      implicit none
+      double precision, dimension(D) :: Mom
+      double precision :: k, l, shift
+      l=sqrt(Mass2)
+      !l=100.0
+      k=norm2(Mom)
+      SelfEnergy=1.0+l/kF*atan((k-kF)/l)
+      SelfEnergy=SelfEnergy-l/kF*atan((k+kF)/l)
+      SelfEnergy=SelfEnergy-(l*l-k*k+kF*kF)/4.0/k/kF*log((l*l+(k-kF)**2)/(l*l+(k+kF)**2))
+      SelfEnergy=SelfEnergy*(-2.0*kF)/pi
+
+      shift=1.0-l/kF*atan(2.0*kF/l)
+      shift=shift-l*l/4.0/kF/kF*log(l*l/(l*l+4*kF**2))
+      shift=shift*(-2.0*kF)/pi
+      SelfEnergy=SelfEnergy-shift
+      SelfEnergy=SelfEnergy+k*k
+      return
+    end function
+
     !!!!!!!!!!!!!!!!! Green's function for free fermion   !!!!!!!!!!!!!!!!!!!!!!!!!!!!
     double precision function Green(tau ,Mom, spin)
       implicit none
@@ -396,7 +417,10 @@ program main
         tau=tau-beta
         s=-s
       endif
-      Ek=sum(Mom**2)   !kinetic energy
+      Ek=sum(Mom**2)   ! bare propagator
+
+      !Ek=SelfEnergy(Mom)   ! Fock diagram dressed propagator
+
       x=Beta*(Ek-Mu)/2.0
       y=2.0*tau/Beta-1.0
       if(x>100.0) then
@@ -415,6 +439,7 @@ program main
       endif
       return
     end function Green
+
 
     !!!!!!!!!!!!!!!!! Green's function for phi4 model   !!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !double precision function Green(tau ,Mom, spin)

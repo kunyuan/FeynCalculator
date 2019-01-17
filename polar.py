@@ -9,10 +9,19 @@ size=12
 
 rs=1
 Beta=10
-# kF=(9.0*np.pi/4.0)**(1.0/3.0)/rs #3D
-# Bubble=0.08871  # 3D, Beta=0.5, rs=1
-# Bubble=0.09720  #3D, Beta=10, rs=1
 
+##############   3D    ##################################
+# kF=(9.0*np.pi/4.0)**(1.0/3.0)/rs #3D
+###### Bare Green's function    #########################
+# Bubble=0.08871  # 3D, Beta=0.5, rs=1
+# Bubble=0.0971916  #3D, Beta=10, rs=1
+# Bubble=0.0971613  #3D, T=0.04Ef, rs=1
+# Bubble= 0.097226 # 3D, zero temperature, rs=1
+###### Fock dressed Green's function ###################
+# Bubble=0.088883 #3D, Beta=0.1, rs=1
+
+##############   2D    ##################################
+###### Bare Green's function    #########################
 kF=np.sqrt(2.0)/rs #2D
 # Bubble=0.11635  #2D, Beta=0.5, rs=1
 Bubble=0.15916  #2D, Beta=10, rs=1
@@ -84,7 +93,8 @@ for order in ScanOrder:
 # print len(Data[3])
         
 
-def ErrorPlot(p, data, color, marker, label=None, size=4):
+def ErrorPlot(p, d, color, marker, label=None, size=4):
+    data=np.array(d)
     data[:,0]/=kF
     # data[:,1]-=data[0,1]
     p.plot(data[:,0],data[:,1],marker=marker,c=color, label=label,lw=1, markeredgecolor="None", linestyle="--", markersize=size)
@@ -104,6 +114,10 @@ for i in range(len(ScanOrder)):
     o=ScanOrder[i]
     ErrorPlot(ax, DataAll[o], ColorList[i], 's', "Order {0}".format(o))
 
+tmp=np.copy(DataAll[1])
+tmp[:,1]+=DataAll[2][:,1] 
+ErrorPlot(ax, tmp, 'm', 's', "Diag 1+2")
+
 # ErrorPlot(ax, Data[3][0], 'r', 's', "Diag 1")
 # ErrorPlot(ax, Data[3][1], 'b', 's', "Diag 2")
 # ErrorPlot(ax, Data[3][2], 'g', 's', "Diag 3")
@@ -121,7 +135,7 @@ y=0.5*x**w
 ax.set_xlim([0.0, 3.0])
 # ax.set_xticks([0.0,0.04,0.08,0.12])
 # ax.set_yticks([0.35,0.4,0.45,0.5])
-# ax.set_ylim([-0.01, 0.0])
+# ax.set_ylim([0.0, 0.12])
 ax.set_xlabel("$q/k_F$", size=size)
 # ax.xaxis.set_label_coords(0.97, -0.01)
 # # ax.yaxis.set_label_coords(0.97, -0.01)
