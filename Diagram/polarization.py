@@ -176,6 +176,14 @@ def HasFock(permutation, reference):
             return True
     return False
 
+def HasBuble(permutation):
+    reference=GetReference(len(permutation)/2)
+    for i in range(len(reference)):
+        end=permutation[permutation[i]]
+        if i==end and i!=0 and permutation[i]!=0:
+            return True
+    return False
+
 def swap(array, i, j):
     array = list(array)
     array[i], array[j] = array[j], array[i]
@@ -587,8 +595,6 @@ def SymmetrizeLoops(OptDiagrams, DiagDict, DiagInvDict):
     print "New", NewOptDiagrams.keys()
     return NewOptDiagrams
 
-# def GetWLoopBases(diag, mom):
-
 def SaveToFile(UniqueDiagrams, Name):
     if len(UniqueDiagrams)==0: 
         return
@@ -597,6 +603,7 @@ def SaveToFile(UniqueDiagrams, Name):
     with open("./Diag{0}{1}.txt".format(Name, order), "a") as f:
         f.write("# DiagNum\n{0}\n\n".format(len(UniqueDiagrams)))
         for diag, sym, mom, all_diag in UniqueDiagrams:
+            print "Hugenholz diagram: ", diag
             f.write("# Topology\n")
             for i in diag:
                 f.write("{0:2d} ".format(i))
@@ -608,31 +615,7 @@ def SaveToFile(UniqueDiagrams, Name):
                     f.write("{0:2d} ".format(mom[i,j]))
                 f.write("\n")
 
-            print "all diagram to print for ", diag
-            # print all_diag
-
             f.write("#Ver Loop Bases\n")
-
-            ###### Generate all Mom ################
-            # WMom=[]
-            # LoopNum=[]
-            # for d in all_diag:
-                # # print "iterate", d
-                # # print "Basis\n", mom
-                # for j in range(1,order):
-                    # end=2*j
-                    # start=d.index(end)
-                    # WMom.append(mom[:,start]-mom[:, end])
-                    # # print start, end
-                    # # print "mom", mom[:, start]-mom[:, end]
-
-            # for i in range(order+1):
-                # for j in range((order-1)*len(all_diag)):
-                    # # end=2*j
-                    # # start=diag.index(end)
-                    # # print start, end, mom[i, start]-mom[i, end]
-                    # f.write("{0:2d} ".format(WMom[j][i]))
-                # f.write("\n")
 
             ###### Generate indepdent Mom ################
             WMom=[]
@@ -653,18 +636,16 @@ def SaveToFile(UniqueDiagrams, Name):
                     TempList.append(tuple(dtemp))
                 AllDiagList=TempList
 
-            # print diag
-            # print mom
-            # print "All diag", AllDiagList
-            # print np.array(WMom).T
-
             for i in range(order+1):
                 for j in range(2*(order-1)):
-                    # end=2*j
-                    # start=diag.index(end)
-                    # print start, end, mom[i, start]-mom[i, end]
                     f.write("{0:2d} ".format(WMom[j][i]))
                 f.write("\n")
+            
+
+            f.write("#Interaction Type\n")
+            for i in range(order+1):
+                f.write("{0:2d} ".format(0))
+            f.write("\n")
 
             f.write("#SpinFactor\n")
             for d in AllDiagList:
@@ -672,21 +653,26 @@ def SaveToFile(UniqueDiagrams, Name):
                 nloop=len(path)
 
                 ########### for spin susceptibility   #####################
-                print "path", path
-                Flag=False
-                for p in path:
-                    if 0 in p and 1 in p:
-                        Flag=True
+                # print "path", path
+                # Flag=False
+                # for p in path:
+                #     if 0 in p and 1 in p:
+                #         Flag=True
 
-                if Flag==False:
-                    print "false", d, path
-                    f.write("{0:2d} ".format(0))
-                else:
-                    f.write("{0:2d} ".format(-(-2)**nloop))
-                #####################################################
+                # if Flag==False:
+                #     print "false", d, path
+                #     spin_factor=0
+                # else:
+                #     spin_factor=-(-2)**nloop
 
-                # f.write("{0:2d} ".format(-(-2)**nloop))
-                # f.write("{0:2d} ".format(-(-1)**nloop))
+                ########## for charge polarization #################
+                spin_factor=-(-2)**nloop
+
+                ##### for spinless charge polarization #########
+                # spin_factor=-(-1)**nloop
+
+                f.write("{0:2d} ".format(spin_factor))
+                print "Feyn Diagram:{0} with spin factor: {1}, HasBubble: {2}".format(d, spin_factor, HasBuble(d))
 
             f.write("\n")
             f.write("\n")

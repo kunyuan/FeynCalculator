@@ -10,6 +10,8 @@
  1  1 
 #Ver Loop Bases
 
+#Interaction Type
+
 #SpinFactor
 2
 

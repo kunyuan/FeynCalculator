@@ -14,11 +14,11 @@ Beta=10
 kF=(9.0*np.pi/4.0)**(1.0/3.0)/rs #3D
 ###### Bare Green's function    #########################
 # Bubble=0.08871  # 3D, Beta=0.5, rs=1
-Bubble=0.0971916  #3D, Beta=10, rs=1
+# Bubble=0.0971916  #3D, Beta=10, rs=1
 # Bubble=0.0971613  #3D, T=0.04Ef, rs=1
 # Bubble= 0.097226 # 3D, zero temperature, rs=1
 ###### Fock dressed Green's function ###################
-# Bubble=0.088883 #3D, Beta=0.1, rs=1
+Bubble=0.088883 #3D, Beta=0.1, rs=1
 
 ##############   2D    ##################################
 ###### Bare Green's function    #########################

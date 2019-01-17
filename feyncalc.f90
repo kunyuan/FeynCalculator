@@ -55,6 +55,7 @@ module parameters
   double precision,dimension(2**(MaxOrder-1), MaxOrder-1) ::SpinCache  ! Spin Factor (includes diagram sign)
   integer, dimension(MaxOrder+1, MaxIndepdentG, MaxOrder) :: LoopBases ! Bases for loops
   integer, dimension(MaxOrder+1, MaxIndepdentVer, MaxOrder) :: LoopBasesVer ! Bases for loops including vertex
+  integer, dimension(MaxIndepdentVer, MaxOrder) :: VerType ! Bases for loops including vertex
   integer, dimension(2*MaxOrder, MaxIndepdentG, MaxOrder) :: TauBases ! Permutation 
   double precision, dimension(MaxDiagNum) :: DiagWeight, DiagWeightABS
 
@@ -72,7 +73,7 @@ module parameters
   !the weight of all diagrams in current sector=AbsWeight*Phase
 
   !-- Measurement  ------------------------------------------------
-  integer, parameter          :: QBinNum=32     !number of q bins
+  integer, parameter          :: QBinNum=64    !number of q bins
   integer                     :: ExtMomBin
   double precision            :: ExtMomMax
   double precision            :: DeltaQ
@@ -369,6 +370,12 @@ program main
               end do
             endif
             Read(10, *) charc
+            ! print *, charc
+            if(o>1) then
+              Read(10, *)  VerType(OffVer+1:OffVer+2*VerNum(o), o)
+              ! print *, o, VerType(OffVer+1:OffVer+2*VerNum(o),o)
+            endif
+            Read(10, *) charc
             Read(10, *) SpinFactor(1:2**VerNum(o), numDiagV, o)
 
             OffDiag = OffDiag + DiagNum1H(o)
@@ -410,6 +417,9 @@ program main
   !    print *, tau, Mom, Spin
   !    stop
       s=1.0
+      if(tau==0.0) then
+        tau=-1.0e-10
+      endif
       if(tau<0) then
         tau=beta+tau
         s=-s
@@ -418,9 +428,9 @@ program main
         tau=tau-beta
         s=-s
       endif
-      Ek=sum(Mom**2)   ! bare propagator
+      ! Ek=sum(Mom**2)   ! bare propagator
 
-      !Ek=SelfEnergy(Mom)   ! Fock diagram dressed propagator
+      Ek=SelfEnergy(Mom)   ! Fock diagram dressed propagator
 
       x=Beta*(Ek-Mu)/2.0
       y=2.0*tau/Beta-1.0
@@ -515,12 +525,13 @@ program main
       !endif
     !end function Green
     
-    double precision function Interaction(tau, Mom, spin)
+    double precision function Interaction(tau, Mom, spin, VerType)
       implicit none
       double precision :: tau
       double precision, dimension(D) :: Mom
-      integer :: spin
+      integer :: spin, VerType
       Interaction=8.0*pi/(sum(Mom**2)+Mass2)
+      Interaction=Interaction*(Mass2/(sum(Mom**2)+Mass2))**VerType
   !    Interaction=1.0/(Mass2)
       return
     end function Interaction
@@ -682,7 +693,7 @@ program main
               Mom(j)=sum(LoopBasesVer(1:LoopNum(NewOrder), i, NewOrder)*LoopMom(j, 1:LoopNum(NewOrder)))
           enddo
 
-          NewVerWeight(i) = Interaction(0.d0, Mom, Spin)
+          NewVerWeight(i) = Interaction(0.d0, Mom, Spin, VerType(i, NewOrder))
           !!!! Reducibility check   !!!!!!!!!!!!!!!!!!
           if(IsReducible(i, NewOrder)==1) then
             NewVerWeight(i)=0.0
@@ -737,7 +748,7 @@ program main
           do j=1, D
             Mom(j)=sum(LoopBasesVer(1:LoopNum(CurrOrder), i, CurrOrder)*LoopMom(j, 1:LoopNum(CurrOrder)))
           enddo
-          NewVerWeight(i) = Interaction(0.d0, Mom, Spin)
+          NewVerWeight(i) = Interaction(0.d0, Mom, Spin, VerType(i, CurrOrder))
           !!!! Reducibility check   !!!!!!!!!!!!!!!!!!
           if(IsReducible(i, CurrOrder)==1) then
             NewVerWeight(i)=0.0
