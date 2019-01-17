@@ -12,7 +12,8 @@ module parameters
   double precision, parameter :: pi=3.1415926
 
   !-- Parameters -------------------------------------------------
-  integer, parameter :: D=2   !D=2 or D=3  
+  integer, parameter :: D=3   !D=2 or D=3  
+  integer, parameter :: EQUALTIMEPOLAR=1  !0: measure zero ferq, 1: measure equal time
   integer, parameter :: UP=1
   integer, parameter :: DOWN=0
   integer, parameter :: MxL=512     !Max size of the system
@@ -202,7 +203,7 @@ program main
       PropStep=0.0
       AcceptStep=0.0
 
-      ExtMomMax = 3.0*kF
+      ExtMomMax = 8.0*kF
       DeltaQ=ExtMomMax/QBinNum
 
       Polarization=0.0
@@ -933,6 +934,8 @@ program main
       integer :: Num
   
       Num=int(grnd()*CurrOrder)*2+1 !1,3,5
+
+      if(Num==1 .and. EQUALTIMEPOLAR==1) return
   
       PropStep(3)=PropStep(3)+1.0
       OldTau=TauTable(Num+1) !in the case of Num==1, TauTable(1)/=TauTable(2)

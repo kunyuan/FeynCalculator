@@ -11,10 +11,10 @@ rs=1
 Beta=10
 
 ##############   3D    ##################################
-# kF=(9.0*np.pi/4.0)**(1.0/3.0)/rs #3D
+kF=(9.0*np.pi/4.0)**(1.0/3.0)/rs #3D
 ###### Bare Green's function    #########################
 # Bubble=0.08871  # 3D, Beta=0.5, rs=1
-# Bubble=0.0971916  #3D, Beta=10, rs=1
+Bubble=0.0971916  #3D, Beta=10, rs=1
 # Bubble=0.0971613  #3D, T=0.04Ef, rs=1
 # Bubble= 0.097226 # 3D, zero temperature, rs=1
 ###### Fock dressed Green's function ###################
@@ -22,9 +22,9 @@ Beta=10
 
 ##############   2D    ##################################
 ###### Bare Green's function    #########################
-kF=np.sqrt(2.0)/rs #2D
+# kF=np.sqrt(2.0)/rs #2D
 # Bubble=0.11635  #2D, Beta=0.5, rs=1
-Bubble=0.15916  #2D, Beta=10, rs=1
+# Bubble=0.15916  #2D, Beta=10, rs=1
 
 ScanOrder=[1,2,3]
 # ScanOrder=[3]
@@ -116,7 +116,8 @@ for i in range(len(ScanOrder)):
 
 tmp=np.copy(DataAll[1])
 tmp[:,1]+=DataAll[2][:,1] 
-ErrorPlot(ax, tmp, 'm', 's', "Diag 1+2")
+tmp[:,1]+=DataAll[3][:,1] 
+ErrorPlot(ax, tmp, 'm', 's', "Diag 1+2+3")
 
 # ErrorPlot(ax, Data[3][0], 'r', 's', "Diag 1")
 # ErrorPlot(ax, Data[3][1], 'b', 's', "Diag 2")
@@ -132,7 +133,7 @@ y=0.5*x**w
 
 # ax.plot(x,y,'k-', lw=2)
 
-ax.set_xlim([0.0, 3.0])
+ax.set_xlim([0.0, 8.0])
 # ax.set_xticks([0.0,0.04,0.08,0.12])
 # ax.set_yticks([0.35,0.4,0.45,0.5])
 # ax.set_ylim([0.0, 0.12])
