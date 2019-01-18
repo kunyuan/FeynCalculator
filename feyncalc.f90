@@ -13,7 +13,7 @@ module parameters
 
   !-- Parameters -------------------------------------------------
   integer, parameter :: D=3   !D=2 or D=3  
-  integer, parameter :: EQUALTIMEPOLAR=1  !0: measure zero ferq, 1: measure equal time
+  integer, parameter :: EQUALTIMEPOLAR=0  !0: measure zero ferq, 1: measure equal time
   double precision, parameter :: SHIFT=1.00
   integer, parameter :: UP=1
   integer, parameter :: DOWN=0
@@ -56,7 +56,8 @@ module parameters
   double precision,dimension(2**(MaxOrder-1), MaxOrder-1) ::SpinCache  ! Spin Factor (includes diagram sign)
   integer, dimension(MaxOrder+1, MaxIndepdentG, MaxOrder) :: LoopBases ! Bases for loops
   integer, dimension(MaxOrder+1, MaxIndepdentVer, MaxOrder) :: LoopBasesVer ! Bases for loops including vertex
-  integer, dimension(MaxIndepdentVer, MaxOrder) :: VerType ! Bases for loops including vertex
+  integer, dimension(MaxIndepdentG, MaxOrder) :: GType 
+  integer, dimension(MaxIndepdentVer, MaxOrder) :: VerType 
   integer, dimension(2*MaxOrder, MaxIndepdentG, MaxOrder) :: TauBases ! Permutation 
   double precision, dimension(MaxDiagNum) :: DiagWeight, DiagWeightABS
 
@@ -161,9 +162,9 @@ program main
         write(*,*) OrderPartitionSum(1:Order)/sum(OrderPartitionSum(1:Order))
         ! write(*,*) ReWeightFactor(1:Order)
 !        write(*,"(A14, A6, f8.3)") "Accept Ratio: ", "Swap:", AcceptStep(3)/PropStep(3)
-        ! print *, "order:", CurrOrder
-        ! print *, "mom1", norm2(LoopMom(:,1)), LoopMom(:,1)
-        ! print *, "mom2", norm2(LoopMom(:,2)), LoopMom(:,2)
+        print *, "order:", CurrOrder
+        print *, "mom1", norm2(LoopMom(:,1)), LoopMom(:,1)
+        print *, "mom2", norm2(LoopMom(:,2)), LoopMom(:,2)
         ! print *, "Momnorm", norm2(LoopMom(:,2)+LoopMom(:,1))**2-Mu, norm2(LoopMom(:,2))**2-Mu
         !print *, "mom3", norm2(LoopMom(:,3))
         !print *, "mom4", norm2(LoopMom(:,4))
@@ -205,7 +206,7 @@ program main
       PropStep=0.0
       AcceptStep=0.0
 
-      ExtMomMax = 5.0*kF
+      ExtMomMax = 3.0*kF
       DeltaQ=ExtMomMax/QBinNum
 
       Polarization=0.0
@@ -358,6 +359,8 @@ program main
             TauBases(1, Offset+1:Offset+GNum(o), o) = (/ (i, i=1,GNum(o)) /) 
             TauBases(2, Offset+1:Offset+GNum(o), o) = TauBases(2, Offset+1:Offset+GNum(o), o) + 1
             Read(10, *) charc
+            Read(10, *) GType(Offset+1:Offset+GNum(o), o)
+            Read(10, *) charc
             Read(10, *) SymFactor(numDiagV, o)
             Read(10, *) charc
             do baseNum=1, LoopNum(o)
@@ -378,6 +381,7 @@ program main
             endif
             Read(10, *) charc
             Read(10, *) SpinFactor(1:2**VerNum(o), numDiagV, o)
+            ! print *, SpinFactor(1:2**VerNum(o), numDiagV, o)
 
             OffDiag = OffDiag + DiagNum1H(o)
             Offset = Offset + GNum(o)
@@ -409,11 +413,24 @@ program main
       return
     end function
 
+    double precision function Green(tau ,Mom, spin, g_type)
+      implicit none
+      double precision :: tau
+      integer :: spin, g_type
+      double precision, dimension(D) :: Mom
+      if(g_type==0) then
+        Green=PhyGreen(tau, Mom)
+      else
+        ! Green=PhyGreen(tau, Mom)
+        ! print *, tau
+        Green=PhyGreen(tau-beta/3.0, Mom)*PhyGreen(+beta/3.0, Mom)*beta
+      endif
+    end function
+
     !!!!!!!!!!!!!!!!! Green's function for free fermion   !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    double precision function Green(tau ,Mom, spin)
+    double precision function PhyGreen(tau ,Mom)
       implicit none
       double precision :: tau, k2, s, Ek, x, y, w, r, coshv
-      integer :: spin, i
       double precision, dimension(D) :: Mom
   !    print *, tau, Mom, Spin
   !    stop
@@ -421,7 +438,7 @@ program main
       if(tau==0.0) then
         tau=-1.0e-10
       endif
-      if(tau<0) then
+      if(tau<0.0) then
         tau=beta+tau
         s=-s
       endif
@@ -436,21 +453,21 @@ program main
       x=Beta*(Ek-Mu)/2.0
       y=2.0*tau/Beta-1.0
       if(x>100.0) then
-        Green=dexp(-x*(y+1.0))
+        PhyGreen=dexp(-x*(y+1.0))
       else if(x<-100.0) then
-        Green=dexp(x*(1.0-y))
+        PhyGreen=dexp(x*(1.0-y))
       else
-        Green=dexp(-x*y)/(2.0*cosh(x))
+        PhyGreen=dexp(-x*y)/(2.0*cosh(x))
       endif
       !if(spin==1 .or. spin==-1) then
-      Green=s*Green
+      PhyGreen=s*PhyGreen
   
-      if(isnan(Green)) then
-        print *, "Green is too large!", tau, Ek, Green
+      if(isnan(PhyGreen)) then
+        print *, "Green is too large!", tau, Ek, PhyGreen
         stop
       endif
       return
-    end function Green
+    end function
 
 
     !!!!!!!!!!!!!!!!! Green's function for phi4 model   !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -688,7 +705,7 @@ program main
         do j=1, D
           Mom(j)=sum(LoopBases(1:LoopNum(NewOrder), i, NewOrder)*LoopMom(j, 1:LoopNum(NewOrder)))
         enddo
-        NewGWeight(i)=Green(Tau, Mom, Spin)
+        NewGWeight(i)=Green(Tau, Mom, Spin, GType(i, NewOrder))
       enddo
   
   
@@ -739,7 +756,7 @@ program main
           do j=1, D
               Mom(j) = sum(LoopBases(1:LoopNum(CurrOrder), i, CurrOrder)*LoopMom(j, 1:LoopNum(CurrOrder)))
           enddo
-          NewGWeight(i) = Green(Tau, Mom, Spin)
+          NewGWeight(i) = Green(Tau, Mom, Spin, GType(i, CurrOrder))
       enddo
   
   
@@ -778,7 +795,7 @@ program main
           do j=1, D
             Mom(j)=sum(LoopBases(1:LoopNum(CurrOrder), i, CurrOrder)*LoopMom(j, 1:LoopNum(CurrOrder)))
           enddo
-          NewGWeight(i)=Green(Tau, Mom, Spin)
+          NewGWeight(i)=Green(Tau, Mom, Spin, GType(i, CurrOrder))
         endif
       enddo
       return
