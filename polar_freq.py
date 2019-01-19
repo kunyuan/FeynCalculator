@@ -30,9 +30,9 @@ Bubble, Density, dMu2=0.088883, 0.2387, -0.2699 #3D, Beta=0.1, rs=1, Lambda=1.0
 ScanOrder=[1,2, 3]
 # ScanOrder=[3]
 Index={}
-Index[1]=[1,2,3]
-Index[2]=[1,2,3,4]
-Index[3]=[1,2,3,4,5,6,7]
+Index[1]=[1]
+Index[2]=[1]
+Index[3]=[1,2,3,4,5]
 DataAll={}
 Data={}
 DataOrderByOrder={}
@@ -59,17 +59,12 @@ for order in ScanOrder:
     print "Found {0} files.".format(Num)
     data0[:,1:]/=Num
 
-    # data0[:,1]*=(-1)**(order-1)
-
-    # print data0
-
     DataAll[order]=np.array(data0)
 
     Data[order]=[]
     for i in Index[order]:
         Num=0
         data=None
-        # for f in glob.glob("Diag"+str(order)+"_*_"+str(i)+".dat"):
         for f in files:
             if re.match("Diag"+str(order)+"_[0-9]+_"+str(i)+".dat", f):
                 print f
@@ -82,19 +77,8 @@ for order in ScanOrder:
                     data[:,1:]+=d[:,1:]
         print "Found {0} files.".format(Num)
         data[:,1:]/=Num
-        # data[:,1]*=(-1)**(order-1)
-        # print data
         Data[order].append(np.array(data))
 
-# Normalization=0.0
-# Num=0
-# for i in range(len(Data[1][0][:,0])):
-#     # print Data[1][0][i,0]
-#     if Data[1][0][i,0]>5.0*kF:
-#         Normalization+=Data[1][0][i,1]
-#         Num+=1
-# Normalization/=Num
-# Normalization/=Density
 Normalization=Data[1][0][0,1]/Bubble
 
 for key in DataAll.keys():
@@ -102,39 +86,22 @@ for key in DataAll.keys():
     for i in range(len(Data[key])):
         Data[key][i][:,1]/=Normalization
 
-Data[1][1][:,1]*=dMu2
-Data[1][2][:,1]*=dMu2
+#Additional sign due to the order
+DataAll[1][:,1]*=1.0
+DataAll[2][:,1]*=-1.0
+DataAll[3][:,1]*=1.0
 
-DataOrderByOrder[1]=Data[1][0]
-DataOrderByOrder[2]=Data[2][0]
+DataAtOrder[1]=np.copy(DataAll[1])
+DataAtOrder[2]=np.copy(DataAll[1])
+DataAtOrder[2][:,1]+=DataAll[2][:,1]
+DataAtOrder[3]=np.copy(DataAll[1])
+DataAtOrder[3][:,1]+=DataAll[2][:,1]
+DataAtOrder[3][:,1]+=DataAll[3][:,1]
 
-DataOrderByOrder[3]=np.copy(DataAll[3])
-DataOrderByOrder[3][:,1]+=Data[1][1][:,1]
-DataOrderByOrder[3][:,1]+=Data[1][2][:,1]
-DataOrderByOrder[3][:,1]+=Data[2][1][:,1]
-DataOrderByOrder[3][:,1]+=Data[2][2][:,1]
-DataOrderByOrder[3][:,1]+=Data[2][3][:,1]
-
-DataOrderByOrder[2][:,1]*=-1.0
-
-DataAtOrder[1]=np.copy(DataOrderByOrder[1])
-DataAtOrder[2]=np.copy(DataOrderByOrder[1])
-DataAtOrder[2][:,1]+=DataOrderByOrder[2][:,1]
-DataAtOrder[3]=np.copy(DataOrderByOrder[1])
-DataAtOrder[3][:,1]+=DataOrderByOrder[2][:,1]
-DataAtOrder[3][:,1]+=DataOrderByOrder[3][:,1]
-
-
-# Data[2][0][:,1]/=8.0*np.pi/(1.0+Data[2][0][:,0]**2)
-# Data[2][0][:,1]=-(Data[2][0][:,1])**0.5
-
-# print len(Data[3])
-        
 
 def ErrorPlot(p, d, color, marker, label=None, size=4):
     data=np.array(d)
     data[:,0]/=kF
-    # data[:,1]-=data[0,1]
     p.plot(data[:,0],data[:,1],marker=marker,c=color, label=label,lw=1, markeredgecolor="None", linestyle="--", markersize=size)
     # p.errorbar(data[:,0],data[:,1], yerr=data[:,2], c=color, ecolor=color, capsize=0, linestyle="None")
     # p.fill_between(data[:,0], data[:,1]-data[:,2], data[:,1]+data[:,2], alpha=0.5, facecolor=color, edgecolor=color)
@@ -152,20 +119,7 @@ for i in range(0, len(ScanOrder)):
     o=ScanOrder[i]
     ErrorPlot(ax, DataAtOrder[o], ColorList[i], 's', "Order {0}".format(o))
 
-# tmp=np.copy(Data[1][0])
-tmp=np.copy(DataAll[2])
-# tmp[:,1]+=DataAll[2][:,1] 
-tmp[:,1]+=DataAll[3][:,1] 
-tmp[:,1]+=Data[1][1][:,1] 
-tmp[:,1]+=Data[1][2][:,1] 
-# ErrorPlot(ax, tmp, 'k', 's', "Diag 1+2+3")
-
-print len(Data[1])
-
-tmp=np.copy(Data[1][1])
-tmp[:,1]+=Data[1][2][:,1]
 # ErrorPlot(ax, Data[1][0], 'k', 's', "Diag 1")
-# ErrorPlot(ax, tmp, 'm', 's', "Diag 3+c 1")
 # ErrorPlot(ax, DataAll[3], 'k', 'o', "Order 3")
 
 # ErrorPlot(ax, Data[2][1], 'g', 'o', "Order 3 counterbubble 1")

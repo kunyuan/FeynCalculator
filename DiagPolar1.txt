@@ -1,42 +1,10 @@
 #DiagNum
-3
+1
 
 # Topology
  1  0 
 #Propagator Type
  0  0
-# SymmetryFactor
--1.0
-# Loop Bases
- 1  0 
- 1  1 
-#Ver Loop Bases
-
-#Interaction Type
-
-#SpinFactor
-2
-
-# Topology
- 1  0 
-#Propagator Type
- 1  0
-# SymmetryFactor
--1.0
-# Loop Bases
- 1  0 
- 1  1 
-#Ver Loop Bases
-
-#Interaction Type
-
-#SpinFactor
-2
-
-# Topology
- 1  0 
-#Propagator Type
- 0  1
 # SymmetryFactor
 -1.0
 # Loop Bases
