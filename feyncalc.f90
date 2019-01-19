@@ -1,91 +1,72 @@
 module parameters
   IMPLICIT NONE
 
-  !-- common parameters and variables ------------------------------
-  ! THIS IS ALMOST PROJECT-INDEPENDENT 
-  double precision, parameter :: tm32   = 1.d0/(2.d0**32.d0)
-  double precision, parameter :: eps    = 1.d-14            ! very small number
-  double precision, parameter :: tol    = 0.15d0            ! tolerance for Cor
-  logical                     :: prt                        ! flag for write2file
-  integer,          parameter :: Mxint  = 2147483647        ! maximum integer
-  integer,          parameter :: Mnint  =-2147483647        ! minimum integer
-  double precision, parameter :: pi=3.1415926
-
   !-- Parameters -------------------------------------------------
-  integer, parameter :: D=3   !D=2 or D=3  
-  integer, parameter :: EQUALTIMEPOLAR=0  !0: measure zero ferq, 1: measure equal time
-  double precision, parameter :: SHIFT=1.00
-  integer, parameter :: UP=1
-  integer, parameter :: DOWN=0
-  integer, parameter :: MxL=512     !Max size of the system
-  integer          :: PID      ! the ID of this job
-  integer :: L     !the actual size of the system
-  integer          :: Order
-  double precision :: Beta
-  double precision :: Mu
-  double precision :: rs
-  double precision :: EF, kF
-  double precision :: Mass2
-  double precision :: TotalStep  !total steps of this MC simulation
-  double precision :: Step    ! a counter to keep track of the current step number
-  integer                      :: Seed                   ! random-number seed
-  integer, parameter :: UpdateNum=4    ! number of updates
+  integer, parameter :: D=3           !D=2 or D=3  
+  integer, parameter :: QBinNum=64    !number of q bins of the external momentum
+  integer            :: PID           ! the ID of this job
+  integer            :: Order
+  double precision   :: Beta, Mu, rs, EF, kF
+  double precision   :: Mass2         ! screening length^2
+  double precision   :: ExtMomMax     !the upper bound of the external Momentum 
+  integer            :: ObsType       !0: measure zero ferq polarization, 1: measure equal time polarization
+  integer            :: Seed          ! random-number seed
+
+  !-- Markov Chain ----------------------------------------------
+  double precision                       :: Step        ! a counter to keep track of the current step number
+  integer                                :: CurrOrder   !keep track of the diagram order for the current state
+  double precision                       :: CurrWeight  !keep track of the weight of the current state
+  integer                                :: ExtMomBin   !keep track of the q bin of the external momentum in the Markov chain
+  integer, parameter                     :: UpdateNum=4 ! number of updates
   double precision, dimension(UpdateNum) :: PropStep
   double precision, dimension(UpdateNum) :: AcceptStep
 
-  !-- Diagram Permutation Table ----------------------------------
-  integer, parameter :: MaxOrder=8 ! Max diagram order
-  integer, parameter :: MaxDiagNum=1024 ! Max diagram number 
-  integer, parameter :: MaxIndepdentG=2048 ! Max indepdent Green function number 
-  integer, parameter :: MaxIndepdentVer=1024 ! Max indepdent vertex number
-  integer, parameter :: MaxEK=10000 ! Max indepdent vertex number
-  integer, parameter :: MaxTau=10000 ! Max indepdent vertex number
-  integer, dimension(MaxOrder) :: GNum, VerNum, LoopNum, DiagNum, TauNum, HugenholtzNum !Number of G, Vertex, Loop, diagram, 
-  integer, dimension(MaxOrder) :: iGNum, iVerNum !Number of independent G and Vertex
-  integer, dimension(MaxOrder) :: DiagNum1H
-  double precision, dimension(MaxOrder) :: ReWeightFactor  ! reweightfactor for each order
-  double precision, dimension(MaxOrder) :: OrderPartitionSum  ! store partition sum for each order
+  !-- Diagram Tables  --------------------------------------------
+  integer, parameter                    :: MaxOrder=8           ! Max diagram order
+  integer, parameter                    :: MaxDiagNum=1024      ! Max diagram number 
+  integer, parameter                    :: MaxIndepdentG=2048   ! Max indepdent Green function number 
+  integer, parameter                    :: MaxIndepdentVer=1024 ! Max indepdent vertex number
+  !integer, parameter                   :: MaxEK=10000          ! Used to tabulate G
+  !integer, parameter                   :: MaxTau=10000         ! Used to tabulate G
 
-  integer :: CurrOrder  ! keep track of the diagram order for the current state
-  double precision               :: CurrWeight !keep track of the weight of the current state
+  integer, dimension(MaxOrder)          :: iGNum, iVerNum       !Number of independent G and Vertex
+  double precision, dimension(MaxOrder) :: ReWeightFactor       !reweightfactor for each order
+  double precision, dimension(MaxOrder) :: OrderPartitionSum    !store partition sum for each order
+  integer, dimension(MaxOrder)          :: GNum, VerNum, LoopNum, TauNum, HugenholtzNum !Number of G, Vertex, Loop, diagram, 
 
-  integer, dimension(MaxDiagNum, 2*MaxOrder, MaxOrder) :: GIndex  ! Index of Green function
-  integer, dimension(MaxDiagNum, 2*MaxOrder, MaxOrder) :: VerIndex ! Index of vertex
-  double precision,dimension(MaxDiagNum, MaxOrder) ::SymFactor  ! Symmetry Factor (includes diagram sign)
-  double precision,dimension(2**(MaxOrder-1), MaxDiagNum, MaxOrder) ::SpinFactor  ! Spin Factor (includes diagram sign)
-  double precision,dimension(2**(MaxOrder-1), MaxOrder-1) ::SpinCache  ! Spin Factor (includes diagram sign)
-  integer, dimension(MaxOrder+1, MaxIndepdentG, MaxOrder) :: LoopBases ! Bases for loops
-  integer, dimension(MaxOrder+1, MaxIndepdentVer, MaxOrder) :: LoopBasesVer ! Bases for loops including vertex
-  integer, dimension(MaxIndepdentG, MaxOrder) :: GType 
-  integer, dimension(MaxIndepdentVer, MaxOrder) :: VerType 
-  integer, dimension(2*MaxOrder, MaxIndepdentG, MaxOrder) :: TauBases ! Permutation 
-  double precision, dimension(MaxDiagNum) :: DiagWeight, DiagWeightABS
+  integer, dimension(MaxDiagNum, 2*MaxOrder, MaxOrder)              :: GIndex  ! Index of Green function
+  integer, dimension(MaxDiagNum, 2*MaxOrder, MaxOrder)              :: VerIndex ! Index of vertex
+  double precision,dimension(MaxDiagNum, MaxOrder)                  :: SymFactor  ! Symmetry Factor (includes diagram sign)
+  double precision,dimension(2**(MaxOrder-1), MaxDiagNum, MaxOrder) :: SpinFactor  ! Spin Factor (includes diagram sign)
+  double precision,dimension(2**(MaxOrder-1), MaxOrder-1)           :: SpinCache  ! Spin Factor (includes diagram sign)
+  integer, dimension(MaxOrder+1, MaxIndepdentG, MaxOrder)           :: LoopBases ! Bases for loops
+  integer, dimension(MaxOrder+1, MaxIndepdentVer, MaxOrder)         :: LoopBasesVer ! Bases for loops including vertex
+  integer, dimension(MaxIndepdentG, MaxOrder)                       :: GType 
+  integer, dimension(MaxIndepdentVer, MaxOrder)                     :: VerType 
+  integer, dimension(2*MaxOrder, MaxIndepdentG, MaxOrder)           :: TauBases ! Permutation 
+  double precision, dimension(MaxDiagNum)                           :: DiagWeight, DiagWeightABS
 
-  double precision, dimension(MaxIndepdentG) :: GWeight !Weight of green function
-  double precision, dimension(MaxIndepdentVer) :: VerWeight ! Weight of vertex (interation)
+  double precision, dimension(MaxIndepdentG)                        :: GWeight, NewGWeight !Weight of green function
+  double precision, dimension(MaxIndepdentVer)                      :: VerWeight, NewVerWeight ! Weight of vertex (interation)
 
-  double precision, dimension(MaxIndepdentG) :: NewGWeight !Weight of green function
-  double precision, dimension(MaxIndepdentVer) :: NewVerWeight ! Weight of vertex (interation)
-
-  double precision, dimension(D, MaxOrder+1) :: LoopMom ! values to attach to each loop basis
-  integer, dimension(MaxOrder+1) :: LoopSpin ! values to attach to each spin
-  double precision, dimension(2*MaxOrder) :: TauTable ! Time table for each Tau, all Tau are between [0,beta)
-
-
-  !the weight of all diagrams in current sector=AbsWeight*Phase
+  double precision, dimension(D, MaxOrder+1)                        :: LoopMom ! values to attach to each loop basis
+  integer, dimension(MaxOrder+1)                                    :: LoopSpin ! values to attach to each spin
+  double precision, dimension(2*MaxOrder)                           :: TauTable ! Time table for each Tau, all Tau are between [0,beta)
 
   !-- Measurement  ------------------------------------------------
-  integer, parameter          :: QBinNum=64    !number of q bins
-  integer                     :: ExtMomBin
-  double precision            :: ExtMomMax
-  double precision            :: DeltaQ
-  double precision, dimension(20) :: F1, F2, F3
+  double precision, dimension(20)                            :: F1, F2, F3   !three weight functions
+  double precision, dimension(QBinNum, MaxOrder)             :: Polarization !the accumulated total weight of the Spin-zz polarization
+  double precision, dimension(MaxDiagNum, QBinNum, MaxOrder) :: PolarDiag    !the accumulated weight for each diagram of the Spin-zz polarization
+  double precision, dimension(D, QBinNum)                    :: ExtMomMesh
 
-  double precision, dimension(QBinNum, MaxOrder) :: Polarization  !the accumulated weight of the Spin-zz polarization
-  double precision, dimension(MaxDiagNum, QBinNum, MaxOrder) :: PolarDiag  !the accumulated weight of the Spin-zz polarization
-  double precision, dimension(QBinNum, MaxOrder) :: TauPolarization  !the accumulated weight of the Spin-zz polarization
-  double precision, dimension(D, QBinNum)   :: ExtMomMesh
-
+  !-- common parameters and variables ------------------------------
+  ! THIS IS PROJECT-INDEPENDENT 
+  integer, parameter          :: UP=1, DOWN=0
+  double precision, parameter :: tm32   = 1.d0/(2.d0**32.d0)
+  double precision, parameter :: eps    = 1.d-14            ! very small number
+  integer,          parameter :: Mxint  = 2147483647        ! maximum integer
+  integer,          parameter :: Mnint  =-2147483647        ! minimum integer
+  double precision, parameter :: pi=3.1415926
 end module
 
 INCLUDE "rng.f90"
@@ -94,14 +75,15 @@ program main
     use mt19937
     use parameters
     implicit none
-    double precision :: x
     integer :: PrintCounter, SaveCounter, o
+    double precision :: TotalStep  !total steps of this MC simulation
+    double precision :: x
   
-    print *, 'Beta, rs, Mass2, Order, TotalStep(*1e6), Seed, PID'
-    read(*,*)  Beta, rs, Mass2, Order, TotalStep, Seed, PID
+    print *, 'Beta, rs, Mass2, Order, MaxExtMom(*kF), TotalStep(*1e6), Observable, Seed, PID'
+    read(*,*)  Beta, rs, Mass2, Order, ExtMomMax, TotalStep, ObsType, Seed, PID
 
     ! For a given order, the bigger factor, the more accurate result 
-    ReWeightFactor(1:3)=(/1.0,1.0,10.0/)
+    ReWeightFactor(1:3)=(/1.0,1.0,20.0/)
 
     if(D==3) then
       kF=(9.0*pi/4.0)**(1.0/3.0)/rs !3D
@@ -113,6 +95,7 @@ program main
     endif
     EF=kF*kF
     Mu=EF
+    ExtMomMax=ExtMomMax*kF
     print *,"Inverse Temperature:", Beta
     print *,"rs:", rs
     print *,"Fermi Mom:", kF
@@ -195,6 +178,7 @@ program main
     subroutine Initialize()
       implicit none
       integer :: i, num
+      double precision :: DeltaQ
 
       CurrOrder=Order
 
@@ -206,7 +190,7 @@ program main
       PropStep=0.0
       AcceptStep=0.0
 
-      ExtMomMax = 3.0*kF
+      !ExtMomMax = 3.0*kF
       DeltaQ=ExtMomMax/QBinNum
 
       Polarization=0.0
@@ -325,6 +309,7 @@ program main
       character (len=20) :: charc
       integer :: Offset, OffVer, OffDiag
       integer :: baseNum, i, numDiagV, o
+      integer, dimension(MaxOrder) :: DiagNum1H, DiagNum 
       character( len = 3 ) :: Orderstr
 
       do o=1, Order
@@ -423,7 +408,8 @@ program main
       else
         ! Green=PhyGreen(tau, Mom)
         ! print *, tau
-        Green=PhyGreen(tau-beta/3.0, Mom)*PhyGreen(+beta/3.0, Mom)*beta
+        ! Green=PhyGreen(tau-beta/3.0, Mom)*PhyGreen(+beta/3.0, Mom)*beta
+        Green=FakeGreen(tau, Mom)
       endif
     end function
 
@@ -432,12 +418,11 @@ program main
       implicit none
       double precision :: tau, k2, s, Ek, x, y, w, r, coshv
       double precision, dimension(D) :: Mom
-  !    print *, tau, Mom, Spin
-  !    stop
+
+      ! if tau is exactly zero, set tau=0^-
+      if(tau==0.0) tau=-eps
+
       s=1.0
-      if(tau==0.0) then
-        tau=-1.0e-10
-      endif
       if(tau<0.0) then
         tau=beta+tau
         s=-s
@@ -464,6 +449,50 @@ program main
   
       if(isnan(PhyGreen)) then
         print *, "Green is too large!", tau, Ek, PhyGreen
+        stop
+      endif
+      return
+    end function
+
+    !!!!!!!!!!!!!!!!! Green's function for free fermion   !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    double precision function FakeGreen(tau ,Mom)
+      implicit none
+      double precision :: tau, k2, s, Ek, x, y, w, r, coshv, Factor
+      double precision, dimension(D) :: Mom
+
+      ! if tau is exactly zero, set tau=0^-
+      if(tau==0.0) tau=-eps
+
+      s=1.0
+      if(tau<0.0) then
+        tau=beta+tau
+        s=-s
+      endif
+      if(tau>=beta) then
+        tau=tau-beta
+        s=-s
+      endif
+      ! Ek=sum(Mom**2)   ! bare propagator
+
+      Ek=SelfEnergy(Mom)   ! Fock diagram dressed propagator
+
+      x=Beta*(Ek-Mu)/2.0
+      y=2.0*tau/Beta-1.0
+      if(x>100.0) then
+        FakeGreen=dexp(-x*(y+1.0))
+        Factor=tau
+      else if(x<-100.0) then
+        FakeGreen=dexp(x*(1.0-y))
+        Factor=-(beta-tau)
+      else
+        FakeGreen=dexp(-x*y)/(2.0*cosh(x))
+        Factor=tau*dexp(x)/(2.0*cosh(x))-(beta-tau)*dexp(-x)/(2.0*cosh(x))
+      endif
+      !if(spin==1 .or. spin==-1) then
+      FakeGreen=s*FakeGreen*Factor
+
+      if(isnan(FakeGreen)) then
+        print *, "Green is too large!", tau, Ek, FakeGreen
         stop
       endif
       return
@@ -548,27 +577,33 @@ program main
       double precision :: tau
       double precision, dimension(D) :: Mom
       integer :: spin, VerType
-      if(VerType>=0) then
-        Interaction=8.0*pi/(sum(Mom**2)+Mass2)
-        Interaction=Interaction*(Mass2/(sum(Mom**2)+Mass2))**VerType
-      else
-        Interaction=SHIFT
+      if(VerType<0) then
+        print *, "VerType can not be ", VerType
+        stop
       endif
-  !    Interaction=1.0/(Mass2)
+
+      Interaction=8.0*pi/(sum(Mom**2)+Mass2)
+
+      if(VerType>0)then
+        !the interaction contains counter-terms
+        Interaction=Interaction*(Mass2/(sum(Mom**2)+Mass2))**VerType
+        Interaction=Interaction*(-1)**VerType
+      endif
+
       return
     end function Interaction
 
     !!!!!!!!!!!!!!!!! Balance the occurance of each order in the Markov Chain !!!!!!!!
-    subroutine ReWeightEachOrder()
-      implicit none
-      integer :: o
-      double precision :: TotalWeight
-      TotalWeight=sum(OrderPartitionSum(1:Order))
-      do o=1, Order
-        ReWeightFactor(o)=TotalWeight/OrderPartitionSum(o)
-      enddo
-      return
-    end subroutine
+    !subroutine ReWeightEachOrder()
+      !implicit none
+      !integer :: o
+      !double precision :: TotalWeight
+      !TotalWeight=sum(OrderPartitionSum(1:Order))
+      !do o=1, Order
+        !ReWeightFactor(o)=TotalWeight/OrderPartitionSum(o)
+      !enddo
+      !return
+    !end subroutine
 
     subroutine Measure()
       implicit none
@@ -580,20 +615,9 @@ program main
       Phase=CurrWeight/AbsWeight
   
       Num=ExtMomBin
-      Q=norm2(ExtMomMesh(:, ExtMomBin))
+      !Q=norm2(ExtMomMesh(:, ExtMomBin))
       !ReWeight=exp(Q*Q/1.d0/kF/kF)
       Reweight=1.0/ReWeightFactor(CurrOrder)
-      ! Reweight=1.0
-  
-      !if(Num<=QBinNum) then
-        !if(D==2) then
-          !!Polarization(Num)=Polarization(Num)+Phase/2.0/pi/Q*Reweight
-          !Polarization(Num)=Polarization(Num)+Phase*Reweight
-        !else
-          !!Polarization(Num)=Polarization(Num)+Phase/4.0/pi/Q/Q*Reweight
-          !Polarization(Num)=Polarization(Num)+Phase*Reweight
-        !endif
-      !endif
   
       call NewState()
       Weight=CalcWeight(1, CurrOrder)
@@ -623,11 +647,15 @@ program main
       implicit none
       integer :: i, ref, j, o
       double precision :: Obs
-      !Save Polarization to disk
+      double precision :: DeltaQ
       character*10 :: ID
       character*10 :: order_str
       character*10 :: DiagIndex
       character*20 :: filename
+      !Save Polarization to disk
+
+      DeltaQ=ExtMomMax/QBinNum
+
       write(ID, '(i10)') PID
       write(order_str, '(i10)') o
       filename="Data/Diag"//trim(adjustl(order_str))//"_"//trim(adjustl(ID))//".dat"
@@ -968,7 +996,7 @@ program main
   
       Num=int(grnd()*CurrOrder)*2+1 !1,3,5
 
-      if(Num==1 .and. EQUALTIMEPOLAR==1) return
+      if(Num==1 .and. ObsType==1) return
   
       PropStep(3)=PropStep(3)+1.0
       OldTau=TauTable(Num+1) !in the case of Num==1, TauTable(1)/=TauTable(2)
@@ -1139,7 +1167,6 @@ program main
       endif
       Prop=1.0
       return
-    
     end subroutine GenerateNewTau
 
 end program main

@@ -7,7 +7,8 @@ mat.rcParams.update({'font.size': 16})
 mat.rcParams["font.family"] = "Times New Roman"
 size=12
 
-rs=1
+rs=1.0
+Lambda=1.0
 Beta=10
 
 ##############   3D    ##################################
@@ -18,7 +19,7 @@ kF=(9.0*np.pi/4.0)**(1.0/3.0)/rs #3D
 # Bubble=0.0971613  #3D, T=0.04Ef, rs=1
 # Bubble= 0.097226 # 3D, zero temperature, rs=1
 ###### Fock dressed Green's function ###################
-Bubble, Density, dMu2=0.088883,0.2387, -0.41 #3D, Beta=0.1, rs=1 
+Bubble, Density, dMu2=0.088883, 0.2387, -0.2699 #3D, Beta=0.1, rs=1, Lambda=1.0
 
 ##############   2D    ##################################
 ###### Bare Green's function    #########################
@@ -30,16 +31,17 @@ ScanOrder=[1,2, 3]
 # ScanOrder=[3]
 Index={}
 Index[1]=[1,2,3]
-Index[2]=[1,]
-Index[3]=[1,2,3,4,5]
+Index[2]=[1,2,3,4]
+Index[3]=[1,2,3,4,5,6,7]
 DataAll={}
-DataErrorAll={}
 Data={}
+DataOrderByOrder={}
+DataAtOrder={}
 Normalization=1
 
 
-folder="./Beta"+str(Beta)+"_rs1.0/Data/"
-# os.chdir(folder)
+folder="./Beta{0}_rs{1}_lambda{2}_freq/Data/".format(Beta, rs, Lambda) 
+
 files=os.listdir(folder)
 for order in ScanOrder:
     Num=0
@@ -57,7 +59,7 @@ for order in ScanOrder:
     print "Found {0} files.".format(Num)
     data0[:,1:]/=Num
 
-    data0[:,1]*=(-1)**(order-1)
+    # data0[:,1]*=(-1)**(order-1)
 
     # print data0
 
@@ -80,41 +82,48 @@ for order in ScanOrder:
                     data[:,1:]+=d[:,1:]
         print "Found {0} files.".format(Num)
         data[:,1:]/=Num
-        data[:,1]*=(-1)**(order-1)
+        # data[:,1]*=(-1)**(order-1)
         # print data
         Data[order].append(np.array(data))
 
-Normalization=0.0
-Num=0
-for i in range(len(Data[1][0][:,0])):
-    # print Data[1][0][i,0]
-    if Data[1][0][i,0]>5.0*kF:
-        Normalization+=Data[1][0][i,1]
-        Num+=1
-Normalization/=Num
-Normalization/=Density
-# Normalization=Data[1][0][0,1]/Bubble
+# Normalization=0.0
+# Num=0
+# for i in range(len(Data[1][0][:,0])):
+#     # print Data[1][0][i,0]
+#     if Data[1][0][i,0]>5.0*kF:
+#         Normalization+=Data[1][0][i,1]
+#         Num+=1
+# Normalization/=Num
+# Normalization/=Density
+Normalization=Data[1][0][0,1]/Bubble
 
 for key in DataAll.keys():
     DataAll[key][:,1]/=Normalization
     for i in range(len(Data[key])):
         Data[key][i][:,1]/=Normalization
 
-
-Num=0
-Shift=0.0
-for i in range(len(Data[1][0][:,0])):
-    # print Data[1][0][i,0]
-    if Data[1][0][i,0]>5.0*kF:
-        Shift+=DataAll[2][i,1]
-        Shift+=DataAll[3][i,1]
-        Num+=1
-
-Shift/=Num
-dMu2=-Shift/Bubble
-print "dMu2=", dMu2
 Data[1][1][:,1]*=dMu2
 Data[1][2][:,1]*=dMu2
+
+DataOrderByOrder[1]=Data[1][0]
+DataOrderByOrder[2]=Data[2][0]
+
+DataOrderByOrder[3]=np.copy(DataAll[3])
+DataOrderByOrder[3][:,1]+=Data[1][1][:,1]
+DataOrderByOrder[3][:,1]+=Data[1][2][:,1]
+DataOrderByOrder[3][:,1]+=Data[2][1][:,1]
+DataOrderByOrder[3][:,1]+=Data[2][2][:,1]
+DataOrderByOrder[3][:,1]+=Data[2][3][:,1]
+
+DataOrderByOrder[2][:,1]*=-1.0
+
+DataAtOrder[1]=np.copy(DataOrderByOrder[1])
+DataAtOrder[2]=np.copy(DataOrderByOrder[1])
+DataAtOrder[2][:,1]+=DataOrderByOrder[2][:,1]
+DataAtOrder[3]=np.copy(DataOrderByOrder[1])
+DataAtOrder[3][:,1]+=DataOrderByOrder[2][:,1]
+DataAtOrder[3][:,1]+=DataOrderByOrder[3][:,1]
+
 
 # Data[2][0][:,1]/=8.0*np.pi/(1.0+Data[2][0][:,0]**2)
 # Data[2][0][:,1]=-(Data[2][0][:,1])**0.5
@@ -139,9 +148,9 @@ fig, ax = plt.subplots()
 # plt.subplot(1,2,2)
 ColorList=['k','r', 'b', 'g', 'm', 'c']
 
-for i in range(1, len(ScanOrder)):
+for i in range(0, len(ScanOrder)):
     o=ScanOrder[i]
-    ErrorPlot(ax, DataAll[o], ColorList[i], 's', "Order {0}".format(o))
+    ErrorPlot(ax, DataAtOrder[o], ColorList[i], 's', "Order {0}".format(o))
 
 # tmp=np.copy(Data[1][0])
 tmp=np.copy(DataAll[2])
@@ -149,31 +158,39 @@ tmp=np.copy(DataAll[2])
 tmp[:,1]+=DataAll[3][:,1] 
 tmp[:,1]+=Data[1][1][:,1] 
 tmp[:,1]+=Data[1][2][:,1] 
-ErrorPlot(ax, tmp, 'k', 's', "Diag 1+2+3")
+# ErrorPlot(ax, tmp, 'k', 's', "Diag 1+2+3")
 
 print len(Data[1])
 
 tmp=np.copy(Data[1][1])
 tmp[:,1]+=Data[1][2][:,1]
-ErrorPlot(ax, Data[1][0], 'k', 's', "Diag 1")
-ErrorPlot(ax, tmp, 'm', 's', "Diag 3+c 1")
-ErrorPlot(ax, Data[1][1], 'm', 's', "Diag 3+c 1")
-ErrorPlot(ax, Data[1][2], 'c', 's', "Diag 3+c 2")
+# ErrorPlot(ax, Data[1][0], 'k', 's', "Diag 1")
+# ErrorPlot(ax, tmp, 'm', 's', "Diag 3+c 1")
+# ErrorPlot(ax, DataAll[3], 'k', 'o', "Order 3")
+
+# ErrorPlot(ax, Data[2][1], 'g', 'o', "Order 3 counterbubble 1")
+# ErrorPlot(ax, Data[2][2], 'g', '*', "Order 3 counterbubble 2")
+# ErrorPlot(ax, Data[2][3], 'g', '>', "Order 3 counterbubble 3")
+
+# ErrorPlot(ax, Data[1][1], 'olive', 'o', "Order 3 shift 1")
+# ErrorPlot(ax, Data[1][2], 'olive', '*', "Order 3 shift 2")
+
 # ErrorPlot(ax, Data[3][3], 'm', 's', "Diag 4")
 # ErrorPlot(ax, Data[3][4], 'c', '*', "Diag 5")
 
 # ErrorPlot(ax, Data[5], 'g', 's', "Diag 6")
 
 
-x=np.arange(0,Data[1][0][-1,0]/kF,0.001)
-y=x*0.0
+# x=np.arange(0,0.2,0.001)
+# y=0.5*x**w
 
-ax.plot(x,y,'k-', lw=1)
+# ax.plot(x,y,'k-', lw=2)
 
 ax.set_xlim([0.0, Data[1][0][-1,0]/kF])
 # ax.set_xticks([0.0,0.04,0.08,0.12])
 # ax.set_yticks([0.35,0.4,0.45,0.5])
-# ax.set_ylim([0.0, 0.12])
+# ax.set_ylim([-0.02, 0.125])
+# ax.set_ylim([0.07, 0.125])
 ax.set_xlabel("$q/k_F$", size=size)
 # ax.xaxis.set_label_coords(0.97, -0.01)
 # # ax.yaxis.set_label_coords(0.97, -0.01)
@@ -186,6 +203,6 @@ plt.legend(loc=1, frameon=False, fontsize=size)
 # plt.title("2D density integral")
 plt.tight_layout()
 
-# plt.savefig("spin.pdf")
+# plt.savefig("spin_rs1_lambda1.pdf")
 plt.show()
 

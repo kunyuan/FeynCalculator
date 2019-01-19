@@ -46,17 +46,17 @@
 # SymmetryFactor
 -1.0
 # Loop Bases
- 1  0  1  1 
- 1  1  1  1 
+ 0 -1  0  0 
+ 1  1  0  1 
  0  0  1  0 
 #Ver Loop Bases
  0  0 
- 0  0 
+-1  0 
  1  0 
 #Interaction Type
- 1 -1
+ 1  0 
 #SpinFactor
- 2 0
+ 2  0
 
 # Bubble counter-term
  1  2  3  0 
@@ -66,14 +66,13 @@
 -1.0
 # Loop Bases
  1  0  0  0 
- 1  1  1  1 
- 0  1  0  0 
+ 1  1  0  1 
+ 0  0  1  0 
 #Ver Loop Bases
  0  0 
- 0  0 
+-1  0 
  1  0 
 #Interaction Type
- 1 -1
+ 1  0
 #SpinFactor
- 2 0
-
+ 2  0

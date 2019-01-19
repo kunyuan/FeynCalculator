@@ -608,6 +608,10 @@ def SaveToFile(UniqueDiagrams, Name):
             for i in diag:
                 f.write("{0:2d} ".format(i))
             f.write("\n")
+            f.write("# Propagator Type\n".format(sym))
+            for i in range(2*order):
+                f.write("{0:2d} ".format(0))
+            f.write("\n")
             f.write("# SymmetryFactor\n{0}\n".format(sym))
             f.write("# Loop Bases\n")
             for i in range(order+1):
