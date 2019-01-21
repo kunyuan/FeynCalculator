@@ -1,3 +1,3 @@
 # FeynCaculator
 
-This small code provides a simple method to calculate Feynman diagrams for generic quantum many-body systems.
+This small code provides a simple tool to calculate Feynman diagrams for a generic quantum many-body system.
