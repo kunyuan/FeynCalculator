@@ -96,6 +96,7 @@ program main
     EF=kF*kF
     Mu=EF
     ExtMomMax=ExtMomMax*kF
+    Beta=Beta/EF
     print *,"Inverse Temperature:", Beta
     print *,"rs:", rs
     print *,"Fermi Mom:", kF
@@ -431,9 +432,9 @@ program main
         tau=tau-beta
         s=-s
       endif
-      ! Ek=sum(Mom**2)   ! bare propagator
+       Ek=sum(Mom**2)   ! bare propagator
 
-      Ek=SelfEnergy(Mom)   ! Fock diagram dressed propagator
+      !Ek=SelfEnergy(Mom)   ! Fock diagram dressed propagator
 
       x=Beta*(Ek-Mu)/2.0
       y=2.0*tau/Beta-1.0
@@ -472,9 +473,9 @@ program main
         tau=tau-beta
         s=-s
       endif
-      ! Ek=sum(Mom**2)   ! bare propagator
+       Ek=sum(Mom**2)   ! bare propagator
 
-      Ek=SelfEnergy(Mom)   ! Fock diagram dressed propagator
+      !Ek=SelfEnergy(Mom)   ! Fock diagram dressed propagator
 
       x=Beta*(Ek-Mu)/2.0
       y=2.0*tau/Beta-1.0
