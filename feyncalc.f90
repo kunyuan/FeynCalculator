@@ -158,9 +158,7 @@ program main
         ! call ReWeightEachOrder()
       endif
       if (PrintCounter==1e7)  then
-        do o=1, Order
-          call SaveToDisk(o)
-        enddo
+        call SaveToDisk()
         PrintCounter=0
       endif
 
@@ -168,9 +166,8 @@ program main
 
     end do
 
-    do o=1, Order
-      call SaveToDisk(o)
-    enddo
+    call SaveToDisk()
+    call SaveToDiskAdditional()
     
     print *, "End simulation."
   
@@ -202,7 +199,7 @@ program main
 
       ExtMomMesh=0.0
       do i=1, QBinNum
-        ExtMomMesh(1, i)=(i-0.5)*DeltaQ
+        ExtMomMesh(1, i)=(i-1)*DeltaQ
       enddo
 
       Step=0.0
@@ -644,7 +641,7 @@ program main
       return
     end subroutine
     
-    subroutine SaveToDisk(o)
+    subroutine SaveToDisk()
       implicit none
       integer :: i, ref, j, o
       double precision :: Obs
@@ -657,34 +654,59 @@ program main
 
       DeltaQ=ExtMomMax/QBinNum
 
-      write(ID, '(i10)') PID
-      write(order_str, '(i10)') o
-      filename="Data/Diag"//trim(adjustl(order_str))//"_"//trim(adjustl(ID))//".dat"
-      write(*,*) "Save to disk ..."
-      open(100, status="replace", file=trim(filename))
-      write(100, *) "#", Step
-      write(100, *) "#", Polarization(1, o)
-      ref=int(kF/DeltaQ)+1
-      do i=1, QBinNum
-          Obs = Polarization(i, o)
-          write(100, *) norm2(ExtMomMesh(:, i)), Obs
-      enddo
-      close(100)
-  
-      do j=1, HugenholtzNum(o)
-          write(DiagIndex, '(i10)') j
-          filename="Data/Diag"//trim(adjustl(order_str))//"_"//trim(adjustl(ID))//"_"//trim(adjustl(DiagIndex))//".dat"
-          open(100, status="replace", file=trim(filename))
-          write(100, *) "#", Step
-          write(100, *) "#", PolarDiag(j,1, o)
-          ref=int(kF/DeltaQ)+1
-          do i=1, QBinNum
-            Obs=PolarDiag(j, i, o)
+      do o=1, Order
+        write(ID, '(i10)') PID
+        write(order_str, '(i10)') o
+        filename="Data/Diag"//trim(adjustl(order_str))//"_"//trim(adjustl(ID))//".dat"
+        write(*,*) "Save to disk ..."
+        open(100, status="replace", file=trim(filename))
+        write(100, *) "#", Step
+        write(100, *) "#", Polarization(1, o)
+        ref=int(kF/DeltaQ)+1
+        do i=1, QBinNum
+            Obs = Polarization(i, o)
             write(100, *) norm2(ExtMomMesh(:, i)), Obs
-          enddo
-          close(100)
+        enddo
+        close(100)
+
+        do j=1, HugenholtzNum(o)
+            write(DiagIndex, '(i10)') j
+            filename="Data/Diag"//trim(adjustl(order_str))//"_"//trim(adjustl(ID))//"_"//trim(adjustl(DiagIndex))//".dat"
+            open(100, status="replace", file=trim(filename))
+            write(100, *) "#", Step
+            write(100, *) "#", PolarDiag(j,1, o)
+            ref=int(kF/DeltaQ)+1
+            do i=1, QBinNum
+              Obs=PolarDiag(j, i, o)
+              write(100, *) norm2(ExtMomMesh(:, i)), Obs
+            enddo
+            close(100)
+        enddo
+        return
       enddo
-      return
+
+    end subroutine
+
+    subroutine SaveToDiskAdditional()
+      implicit none
+      integer :: i, ref, j, o
+      double precision :: Obs
+      double precision :: DeltaQ
+      character*10 :: ID
+      character*20 :: filename
+      !Save Polarization to disk
+
+      DeltaQ=ExtMomMax/QBinNum
+
+      filename="output.dat"
+      open(100, position="append", file=trim(filename))
+      write(100, *) "#para", rs, Beta, PID
+      do o=1, Order
+        write(100, *) o, Polarization(1, o)
+      enddo
+      write(100, *)
+      close(100)
+    
     end subroutine
     
     !subroutine SaveToDiskF()
