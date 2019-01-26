@@ -1174,11 +1174,12 @@ program main
       double precision, intent(in) :: OldTau
       double precision, intent(out) :: NewTau
       double precision, intent(out) :: Prop
-      double precision :: DeltaT
-      if(grnd()<1.0/3.0) then
+      double precision :: DeltaT, x
+      x=grnd()
+      if(x<1.0/3.0) then
         DeltaT=Beta/3.0
         NewTau=OldTau+DeltaT*(grnd()-0.5)
-      else if(grnd()<2.0/3.0) then
+      else if(x<2.0/3.0) then
         NewTau=-OldTau
       else
         NewTau=grnd()*Beta
