@@ -682,9 +682,9 @@ program main
             enddo
             close(100)
         enddo
-        return
       enddo
 
+      return
     end subroutine
 
     subroutine SaveToDiskAdditional()
